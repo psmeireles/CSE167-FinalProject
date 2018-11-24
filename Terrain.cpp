@@ -47,6 +47,7 @@ Terrain::Terrain(int size, GLuint shader)
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &texBuffer);
+	glGenBuffers(1, &normalBuffer);
 	glGenBuffers(1, &EBO);
 
 	// Bind the Vertex Array Object (VAO) first, then bind the associated buffers to it.
@@ -77,6 +78,18 @@ Terrain::Terrain(int size, GLuint shader)
 		GL_FLOAT,                         // type
 		GL_FALSE,                         // normalized?
 		2 * sizeof(GLfloat),                                // stride
+		(GLvoid*)0                          // array buffer offset
+	);
+
+	glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
+	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(
+		2,                                // attribute
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		3 * sizeof(GLfloat),                                // stride
 		(GLvoid*)0                          // array buffer offset
 	);
 
@@ -124,7 +137,7 @@ void Terrain::draw(GLuint shaderProgram, glm::mat4 C) {
 	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 	glBindVertexArray(VAO);
 	// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
-	glDrawElements(GL_TRIANGLE_STRIP, indices.size(), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
 	// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
 	glBindVertexArray(0);
@@ -148,6 +161,25 @@ void Terrain::parse(int size)
 			float x = i - size / 2;
 			float z = j - size / 2;
 			this->vertices.push_back(glm::vec3(x, map[i][j], z));
+		}
+	}
+
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++) {
+			glm::vec3 normal;
+			if (j == size-1 && i == size-1) {
+				normal = glm::cross(this->vertices[size*(i - 1) + j] - this->vertices[size*i + j], this->vertices[size*i + (j - 1)] - this->vertices[size*i + j]);
+			}
+			else if (i == size-1) {
+				normal = glm::cross(this->vertices[size*(i - 1) + j] - this->vertices[size*i + j], this->vertices[size*i + (j + 1)] - this->vertices[size*i + j]);
+			}
+			else if (j == size-1) {
+				normal = glm::cross(this->vertices[size*(i + 1) + j] - this->vertices[size*i + j], this->vertices[size*i + (j - 1)] - this->vertices[size*i + j]);
+			}
+			else {
+				normal = glm::cross(this->vertices[size*(i + 1) + j] - this->vertices[size*i + j], this->vertices[size*i + (j + 1)] - this->vertices[size*i + j]);
+			}
+			this->normals.push_back(glm::normalize(normal));
 		}
 	}
 

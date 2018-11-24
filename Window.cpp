@@ -7,7 +7,7 @@ Curve *curves[8], *nbCurves[8];
 Terrain *terrain;
 Transform *world, *anchorTranslations[8], *controlTranslations[16], *sphereTranslation, *sphereScale;
 Transform *armyT[1000];
-GLint Window::objShader, Window::cubeShader, colorShader;
+GLint Window::objShader, Window::cubeShader, colorShader, terrainShader;
 glm::vec3 lastSpherePos;
 
 // Default camera parameters
@@ -56,6 +56,7 @@ void Window::initialize_objects()
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
 	cubeShader = LoadShaders("../cubeShader.vert", "../cubeShader.frag");
 	colorShader = LoadShaders("../colorShader.vert", "../colorShader.frag");
+	terrainShader = LoadShaders("../terrainShader.vert", "../terrainShader.frag");
 
 	sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
 	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -106,7 +107,7 @@ void Window::initialize_objects()
 	sphereScale->addChild(sphere);
 	sphereTranslation->addChild(sphereScale);
 	cube = new Cube();
-	terrain = new Terrain(257, colorShader);
+	terrain = new Terrain(1025, terrainShader);
 	world->addChild(cube);
 	//world->addChild(sphereTranslation);
 	world->addChild(terrain);
