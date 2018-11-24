@@ -13,6 +13,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Node.h"
 #include "Window.h"
+#include <time.h>
 
 class Terrain :
 	public Node

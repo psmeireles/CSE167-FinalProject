@@ -29,7 +29,7 @@ Terrain::Terrain(int size, GLuint shader)
 	map[size-1][size-1] = 0;
 
 	terrainSize = size;
-	srand(glfwGetTime());
+	srand(time(NULL));
 	dsa(map, size);
 
 	parse(size);
