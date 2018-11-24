@@ -14,6 +14,7 @@
 #include "Geometry.h"
 #include "Cube.h"
 #include "Curve.h"
+#include "Terrain.h"
 #include "shader.h"
 #include <glm/gtc/quaternion.hpp>
 #include <vector>
