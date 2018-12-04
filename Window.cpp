@@ -59,10 +59,10 @@ void Window::initialize_objects()
 	colorShader = LoadShaders("../colorShader.vert", "../colorShader.frag");
 	terrainShader = LoadShaders("../terrainShader.vert", "../terrainShader.frag");
 
-	sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
+	/*sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
 	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
 	greenPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 1.0f, 0.0f));
-	world = new Transform(glm::mat4(1.0f));
+	*/world = new Transform(glm::mat4(1.0f));
 	
 	for (int i = 0; i < 32; i++) {
 		if (i != 0 && i % 4 == 0) {

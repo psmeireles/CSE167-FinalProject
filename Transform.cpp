@@ -151,7 +151,7 @@ void Transform::parseSphere()
 
 	FILE *fp = fopen("../obj/sphere.obj", "rb");
 	if (fp == NULL) {
-		printf("error loading file\n");
+		printf("transform:error loading file\n");
 		system("pause");
 		exit(-1);
 	}
