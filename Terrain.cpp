@@ -34,10 +34,10 @@ Terrain::Terrain(int size, GLuint shader)
 
 	parse(size);
 
-	for (int i = 0; i < size; i++) {
+	/*for (int i = 0; i < size; i++) {
 		free(map[i]);
 	}
-	free(map);
+	free(map);*/
 
 	this->color = glm::vec3(0.0, 1.0, 0.0);
 	this->shader = shader;
@@ -189,8 +189,8 @@ void Terrain::parse(int size)
 			this->indices.push_back((i + 1)*size + j);
 			this->indices.push_back(i *size + (j + 1));
 			this->indices.push_back((i + 1)*size + j);
+			this->indices.push_back((i + 1) * size + (j + 1));
 			this->indices.push_back(i *size + (j + 1));
-			this->indices.push_back((i+1) * size + (j+1));
 		}
 	}
 }

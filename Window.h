@@ -54,6 +54,8 @@ public:
 	static std::vector<glm::vec3> planesPoints;
 	static bool culling;
 	static GLint objShader, cubeShader;
+
+	static void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed);
 };
 
 #endif

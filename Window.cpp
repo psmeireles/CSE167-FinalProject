@@ -49,6 +49,7 @@ float curvesLength = 0.0f;
 bool sphereIsRiding = true;
 float lastTime = 0.0f;
 float distance = 0.0f;
+int terrainLength = 1025;
 
 void Window::initialize_objects()
 {
@@ -84,22 +85,22 @@ void Window::initialize_objects()
 		}
 	}
 
-	for (int i = 0; i < 8; i++) {
-		curves[i] = new Curve(points[i], glm::vec3(0.0f, 0.0f, 0.0f), colorShader);
-		curvesLength += curves[i]->totalDistance;
-		nbCurves[i] = new Curve(points[i][2], points[(i + 1) % 8][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader);
-		//world->addChild(curves[i]);
-		//world->addChild(nbCurves[i]);
-		anchorTranslations[i] = new Transform(glm::translate(glm::mat4(1.0f), points[i][0]));
-		anchorTranslations[i]->addChild(redPoint);
-		controlTranslations[2 * i] = new Transform(glm::translate(glm::mat4(1.0f), points[i][1]));
-		controlTranslations[2 * i]->addChild(greenPoint);
-		controlTranslations[2 * i + 1] = new Transform(glm::translate(glm::mat4(1.0f), points[i][2]));
-		controlTranslations[2 * i + 1]->addChild(greenPoint);
-		//world->addChild(anchorTranslations[i]);
-		//world->addChild(controlTranslations[2*i]);
-		//world->addChild(controlTranslations[2 * i + 1]);
-	}
+	//for (int i = 0; i < 8; i++) {
+	//	curves[i] = new Curve(points[i], glm::vec3(0.0f, 0.0f, 0.0f), colorShader);
+	//	curvesLength += curves[i]->totalDistance;
+	//	nbCurves[i] = new Curve(points[i][2], points[(i + 1) % 8][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader);
+	//	//world->addChild(curves[i]);
+	//	//world->addChild(nbCurves[i]);
+	//	anchorTranslations[i] = new Transform(glm::translate(glm::mat4(1.0f), points[i][0]));
+	//	anchorTranslations[i]->addChild(redPoint);
+	//	controlTranslations[2 * i] = new Transform(glm::translate(glm::mat4(1.0f), points[i][1]));
+	//	controlTranslations[2 * i]->addChild(greenPoint);
+	//	controlTranslations[2 * i + 1] = new Transform(glm::translate(glm::mat4(1.0f), points[i][2]));
+	//	controlTranslations[2 * i + 1]->addChild(greenPoint);
+	//	//world->addChild(anchorTranslations[i]);
+	//	//world->addChild(controlTranslations[2*i]);
+	//	//world->addChild(controlTranslations[2 * i + 1]);
+	//}
 	
 	sphereTranslation = new Transform(glm::translate(glm::mat4(1.0f), points[0][0]));
 	lastSpherePos = points[0][0];
@@ -107,7 +108,7 @@ void Window::initialize_objects()
 	sphereScale->addChild(sphere);
 	sphereTranslation->addChild(sphereScale);
 	cube = new Cube();
-	terrain = new Terrain(1025, terrainShader);
+	terrain = new Terrain(terrainLength, terrainShader);
 	world->addChild(cube);
 	//world->addChild(sphereTranslation);
 	world->addChild(terrain);
@@ -298,11 +299,13 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 	int pairIndex = (currentPoint - 1) % 8;
 	if (pairIndex == -1)
 		pairIndex = 7;
-	glm::vec3 camDir = glm::normalize(cam_look_at - camPos);
+	
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
 	float cameraSpeed = 25.0f*deltaT;
+	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
+
 	switch (key) {
 		// Check if escape was pressed
 	case(GLFW_KEY_ESCAPE):
@@ -322,24 +325,16 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 
 		debugMode = !debugMode;
 	case GLFW_KEY_W:
-		camPos += cameraSpeed * camDir;
-		cam_look_at = camPos + camDir;
-		V = glm::lookAt(camPos, cam_look_at, cam_up);
+		moveCamera(camDir, camDir, cameraSpeed);
 		break;
 	case GLFW_KEY_A:
-		camPos -= glm::normalize(glm::cross(camDir, cam_up)) * cameraSpeed;
-		cam_look_at = camPos + camDir;
-		V = glm::lookAt(camPos, cam_look_at, cam_up);
+		moveCamera(-glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
 		break;
 	case GLFW_KEY_S:
-		camPos -= cameraSpeed * camDir;
-		cam_look_at = camPos + camDir;
-		V = glm::lookAt(camPos, cam_look_at, cam_up);
+		moveCamera(-camDir, camDir, cameraSpeed);
 		break;
 	case GLFW_KEY_D:
-		camPos += glm::normalize(glm::cross(camDir, cam_up)) * cameraSpeed;
-		cam_look_at = camPos + camDir;
-		V = glm::lookAt(camPos, cam_look_at, cam_up);
+		moveCamera(glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
 		break;
 	case GLFW_KEY_RIGHT:
 		currentPoint = (currentPoint + 1) % 8;
@@ -492,4 +487,28 @@ float Window::dist(glm::vec3 planeNormal, glm::vec3 planePoint, glm::vec3 point)
 	float dist = glm::dot(point - planePoint, planeNormal);
 
 	return dist;
+}
+
+void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
+	float eyeY = 0.0f;
+	float xLerpFactor = 0.0;
+	float zLerpFactor = 0.0;
+	int xIndex, zIndex;
+	int heightOffset = 10;
+	float lastY = Window::camPos.y;
+
+	movementDir.y = 0;
+	Window::camPos += speed * movementDir;
+	xLerpFactor = Window::camPos.x - (int)Window::camPos.x;
+	zLerpFactor = Window::camPos.z - (int)Window::camPos.z;
+	xIndex = (int)Window::camPos.x + terrainLength / 2;
+	zIndex = (int)Window::camPos.z + terrainLength / 2;
+	eyeY = (1 - zLerpFactor)*((1 - xLerpFactor)*terrain->map[xIndex][zIndex] + xLerpFactor * terrain->map[xIndex + 1][zIndex])
+		+ zLerpFactor * ((1 - xLerpFactor)*terrain->map[xIndex][zIndex + 1] + xLerpFactor * terrain->map[xIndex + 1][zIndex + 1]);
+	if (abs(eyeY + heightOffset - lastY) > 1) {
+		Window::camPos.y = eyeY + heightOffset;
+		printf("%f\n", Window::camPos.y);
+	}
+	cam_look_at = Window::camPos + camDir;
+	Window::V = glm::lookAt(Window::camPos, cam_look_at, cam_up);
 }
