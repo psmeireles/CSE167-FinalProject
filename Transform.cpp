@@ -12,7 +12,7 @@ Transform::Transform(glm::mat4 transform)
 	max_y = std::numeric_limits<float>::lowest();
 	max_z = std::numeric_limits<float>::lowest();
 
-	parseSphere();
+	//parseSphere();
 	objIsSelected = true;
 	lastState = 0;
 
