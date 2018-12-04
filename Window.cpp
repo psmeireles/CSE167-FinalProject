@@ -2,6 +2,12 @@
 
 const char* window_title = "GLFW Starter Project";
 Geometry *sphere, *redPoint, *greenPoint;
+
+//Testing tree
+Geometry *tree;
+Transform * treeTranslation;
+Transform * treeScale;
+
 Cube *cube;
 Curve *curves[8], *nbCurves[8];
 Terrain *terrain;
@@ -61,6 +67,12 @@ void Window::initialize_objects()
 	sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
 	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
 	greenPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 1.0f, 0.0f));
+    
+    
+    //Testing tree
+    tree = new Geometry("../obj/lowtree.obj", colorShader, glm::vec3(0.0,1.0f, 0.0f));
+    
+    
 	world = new Transform(glm::mat4(1.0f));
 	
 	for (int i = 0; i < 32; i++) {
@@ -109,9 +121,21 @@ void Window::initialize_objects()
 	cube = new Cube();
 	terrain = new Terrain(1025, terrainShader);
 	world->addChild(cube);
+    
+    
 	//world->addChild(sphereTranslation);
-	world->addChild(terrain);
-	world->radius = 9999999;
+	
+    //world->addChild(terrain);
+	
+    //Testing tree
+    treeTranslation = new Transform(glm::translate(glm::mat4(1.0f), points[0][0]));
+    treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+    treeScale->addChild(tree);
+    treeTranslation->addChild(treeScale);
+    world->addChild(treeTranslation);
+    
+    
+    world->radius = 9999999;
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.
