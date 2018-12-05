@@ -2,13 +2,20 @@
 
 using namespace std;
 
-Tree::Tree(GLuint shader)
+Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 {
+	GLint recursions = 3;
+	this->treeSystem = treeSystem;
+	this->currentPos = startPos;
+	this->currentDir = glm::vec3(0.0f, 1.0f, 0.0f); // tree starts pointing up in y direction
+	
 	toWorld = glm::mat4(1.0f);
-
 	this->color = glm::vec3(0.0, 1.0, 0.0);
 	this->shader = shader;
 
+	std::string language = this->treeSystem->generateString(3);
+	printf("language:%s\n", language.c_str());
+	generateVertices(language);
 	// Create array object and buffers. Remember to delete your buffers when the object is destroyed!
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -78,7 +85,8 @@ Tree::~Tree()
 }
 
 void Tree::draw(GLuint shaderProgram, glm::mat4 C) {
-
+	
+	//printf("treedraw\n");
 	glUseProgram(shader);
 
 	// Calculate the combination of the model and view (camera inverse) matrices
@@ -102,8 +110,10 @@ void Tree::draw(GLuint shaderProgram, glm::mat4 C) {
 
 	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 	glBindVertexArray(VAO);
+
+	glLineWidth(40);
 	// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
-	glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_POINTS, indices.size(), GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
 	// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
 	glBindVertexArray(0);
@@ -114,11 +124,97 @@ void Tree::update()
 {
 }
 
-void Tree::rotate(GLfloat angle, glm::vec3 axis)
+void Tree::rotateDir(GLfloat angle, glm::vec3 axis)
 {
-	toWorld = toWorld * glm::rotate(glm::mat4(1.0f), angle / 180.0f * glm::pi<float>(), axis);
+	currentDir = glm::vec3(glm::rotate(glm::mat4(1.0f), angle / 180.0f * glm::pi<float>(), axis) * glm::vec4(currentDir, 0.0f)) ;
+	
+	currentDir = glm::normalize(currentDir); // normalizes the direction vector after rotation
 }
 
 void Tree::randomize(int range) {
 	(rand() % (2 * range)) - range;
+}
+
+void Tree::generateVertices(std::string language)
+{
+	printf("Generatedvertices: %s\n", language.c_str());
+	std::vector<char> variables = this->treeSystem->getVariables();
+	std::vector<GLfloat> params = this->treeSystem->getParams();
+	std::unordered_map<char, GLfloat> variableMap;
+
+	// Adds all variables and corresponding params to the map
+	for (int i = 0; i < variables.size(); i++)
+	{
+		variableMap[variables[i]] = params[i];
+	}
+
+	std::pair < glm::vec3, glm::vec3 > temp;
+	// Format: 
+	//    All letters = move forward
+	//    [ symbol = push, rotate left (around z axis)
+	//    ] symbol = pop, rotate right (around z axis)
+	//    - = rotate left (y axis)
+	//    + = rotate right (y axis)
+	//    < = rotate left (x axis)
+	//    > = rotate right (x axis)
+	// randomize the angle from 0.9 to 1.1: ex so 45 deg turn might become 40deg or 50 deg, but still
+	// in the same general direction
+	printf("chars:");
+	for (auto c : language)
+	{
+		printf("%c ", c);
+		
+		if (isalpha(c))
+		{
+			vertices.push_back(currentPos);
+			currentPos += currentDir * variableMap.at(c); // scales direction by the param value
+			vertices.push_back(currentPos);
+		}
+		else
+		{
+			try
+			{
+				switch (c)
+				{
+				case '[':
+					positionStack.push_back(std::pair < glm::vec3, glm::vec3 >(currentPos, currentDir));
+					rotateDir(-variableMap.at(c),glm::vec3(0.0f, 0.0f, 1.0f));
+					break;
+				case ']':
+					temp = positionStack.back();
+					positionStack.pop_back();
+					currentPos = temp.first; // retrieves saved pos and direction from stack
+					currentDir = temp.second;
+					rotateDir(variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+					break;
+				case '-':
+					rotateDir(-variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
+					break;
+				case '+':
+					rotateDir(variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
+					break;
+				case '<':
+					rotateDir(-variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
+					break;
+				case '>':
+					rotateDir(variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
+					break;
+
+				}
+			}
+			catch (const std::exception&)
+			{
+				printf("%c not found in variableMap\n", c);
+			}
+		}
+	}
+	printf("\n");
+}
+
+void Tree::updateMinMaxCoordinates(float x, float y, float z) {
+
+}
+
+void Tree::shiftAndResizeSphere() {
+
 }

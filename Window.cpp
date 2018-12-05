@@ -7,7 +7,7 @@ Curve *curves[8], *nbCurves[8];
 Terrain *terrain;
 Transform *world, *anchorTranslations[8], *controlTranslations[16], *sphereTranslation, *sphereScale;
 Transform *armyT[1000];
-GLint Window::objShader, Window::cubeShader, colorShader, terrainShader;
+GLint Window::objShader, Window::cubeShader, colorShader, terrainShader, treeShader;
 glm::vec3 lastSpherePos;
 
 // Default camera parameters
@@ -51,13 +51,38 @@ float lastTime = 0.0f;
 float distance = 0.0f;
 int terrainLength = 1025;
 
+//////
+
+std::vector<char> variables = { '0', '1' , '[', ']'};
+std::vector<GLfloat> params = { 10.0f, 10.0f, 45.0f, 45.0f};
+std::string initString = "0";
+std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[0]0"} });
+LSystem * system1 = new LSystem(variables, params, initString, ruleMap);
+std::string result = system1->generateString(3);
+
+
+Tree * tree1;
+glm::vec3 startPos(0.0f, 0.0f, 180.0f);
+
 void Window::initialize_objects()
 {
+	printf("\nLSystemTest:");
+	printf(result.c_str());
+	printf("\n\n");
+	
 	// Load the shader program. Make sure you have the correct filepath up top
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
 	cubeShader = LoadShaders("../cubeShader.vert", "../cubeShader.frag");
 	colorShader = LoadShaders("../colorShader.vert", "../colorShader.frag");
 	terrainShader = LoadShaders("../terrainShader.vert", "../terrainShader.frag");
+	treeShader = LoadShaders("../treeShader.vert", "../treeShader.frag");
+
+
+	tree1 = new Tree(treeShader, system1, startPos);
+	std::string result2 = system1->generateString(3);
+	printf("\nLSystemTest:");
+	printf(result2.c_str());
+	printf("\n\n");
 
 	/*sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
 	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -113,6 +138,8 @@ void Window::initialize_objects()
 	//world->addChild(sphereTranslation);
 	world->addChild(terrain);
 	world->radius = 9999999;
+
+	world->addChild(tree1);
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.

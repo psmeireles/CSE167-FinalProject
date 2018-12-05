@@ -15,7 +15,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Node.h"
 #include "Window.h"
+#include "LSystem.h"
 #include <utility>
+#include <unordered_map>
 
 class Tree :
 	public Node
@@ -28,20 +30,26 @@ private:
 	glm::vec3 color;
 	GLuint shader;
 
+	glm::vec3 currentPos;
+	glm::vec3 currentDir;
+
 public:
-	Tree(GLuint shader);
+	Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos);
 	~Tree();
 
-	void generate();
+	void generateVertices(std::string);
 	void randomize(int range);
 	void update();
-	void rotate(GLfloat angle, glm::vec3 axis);
+	void rotateDir(GLfloat angle, glm::vec3 axis);
 	void draw(GLuint shaderProgram, glm::mat4 C);
+	void shiftAndResizeSphere();
+	void updateMinMaxCoordinates(float x, float y, float z);
 
-	glm::vec3 direction;
 	std::vector < std::pair < glm::vec3, glm::vec3 >> positionStack; // keeps track of prev position and direction
 
 	glm::mat4 toWorld;
+
+	LSystem * treeSystem;
 
 	GLuint VBO, VAO, EBO, normalBuffer, texBuffer;
 };
