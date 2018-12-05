@@ -54,7 +54,7 @@ int terrainLength = 1025;
 //////
 
 std::vector<char> variables = { '0', '1' , '[', ']'};
-std::vector<GLfloat> params = { 10.0f, 10.0f, 45.0f, 45.0f};
+std::vector<GLfloat> params = { 1.0f, 1.0f, 45.0f, 45.0f};
 std::string initString = "0";
 std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[0]0"} });
 LSystem * system1 = new LSystem(variables, params, initString, ruleMap);
@@ -77,8 +77,6 @@ void Window::initialize_objects()
 	terrainShader = LoadShaders("../terrainShader.vert", "../terrainShader.frag");
 	treeShader = LoadShaders("../treeShader.vert", "../treeShader.frag");
 
-
-	tree1 = new Tree(treeShader, system1, startPos);
 	std::string result2 = system1->generateString(3);
 	printf("\nLSystemTest:");
 	printf(result2.c_str());
@@ -134,12 +132,18 @@ void Window::initialize_objects()
 	sphereTranslation->addChild(sphereScale);
 	cube = new Cube();
 	terrain = new Terrain(terrainLength, terrainShader);
+
+	startPos = glm::vec3(0, terrain->map[terrainLength/2][150+terrainLength / 2] - 2, 150);
+	//printf("x,y,z:")
+	tree1 = new Tree(treeShader, system1, startPos);
+
 	world->addChild(cube);
 	//world->addChild(sphereTranslation);
 	world->addChild(terrain);
 	world->radius = 9999999;
 
 	world->addChild(tree1);
+
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.

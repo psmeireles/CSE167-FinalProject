@@ -40,6 +40,7 @@ public:
 	void generateVertices(std::string);
 	void randomize(int range);
 	void update();
+	void rotate(GLfloat angle, glm::vec3 axis);
 	void rotateDir(GLfloat angle, glm::vec3 axis);
 	void draw(GLuint shaderProgram, glm::mat4 C);
 	void shiftAndResizeSphere();
