@@ -49,7 +49,7 @@ float curvesLength = 0.0f;
 bool sphereIsRiding = true;
 float lastTime = 0.0f;
 float distance = 0.0f;
-int terrainLength = 1025;
+int terrainLength = 513;
 
 //////
 
@@ -131,7 +131,8 @@ void Window::initialize_objects()
 	sphereScale->addChild(sphere);
 	sphereTranslation->addChild(sphereScale);
 	cube = new Cube();
-	terrain = new Terrain(terrainLength, terrainShader);
+
+	terrain = new Terrain(terrainLength, terrainShader, "../textures/grass.ppm");
 
 	startPos = glm::vec3(0, terrain->map[terrainLength/2][150+terrainLength / 2] - 2, 150);
 	//printf("x,y,z:")
@@ -334,83 +335,84 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
-	float cameraSpeed = 25.0f*deltaT;
+	float cameraSpeed = 100.0f*deltaT;
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
+	if (action = GLFW_PRESS) {
+		switch (key) {
+			// Check if escape was pressed
+		case(GLFW_KEY_ESCAPE):
+			// Close the window. This causes the program to also terminate.
+			glfwSetWindowShouldClose(window, GL_TRUE);
+		case GLFW_KEY_N:
+			Window::normalColor = (Window::normalColor + 1) % 2;
+			break;
+		case GLFW_KEY_TAB:
+			Window::culling = !Window::culling;
+			break;
+		case GLFW_KEY_1:
+			if (debugMode == false)
+				P = glm::perspective(glm::radians(80.0f), ratio, nearDist, farDist);
+			else
+				P = glm::perspective(fov, ratio, nearDist, farDist);
 
-	switch (key) {
-		// Check if escape was pressed
-	case(GLFW_KEY_ESCAPE):
-		// Close the window. This causes the program to also terminate.
-		glfwSetWindowShouldClose(window, GL_TRUE);
-	case GLFW_KEY_N:
-		Window::normalColor = (Window::normalColor + 1) % 2;
-		break;
-	case GLFW_KEY_TAB:
-		Window::culling = !Window::culling;
-		break;
-	case GLFW_KEY_1:
-		if (debugMode == false)
-			P = glm::perspective(glm::radians(80.0f), ratio, nearDist, farDist);
-		else
-			P = glm::perspective(fov, ratio, nearDist, farDist);
-
-		debugMode = !debugMode;
-	case GLFW_KEY_W:
-		moveCamera(camDir, camDir, cameraSpeed);
-		break;
-	case GLFW_KEY_A:
-		moveCamera(-glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
-		break;
-	case GLFW_KEY_S:
-		moveCamera(-camDir, camDir, cameraSpeed);
-		break;
-	case GLFW_KEY_D:
-		moveCamera(glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
-		break;
-	case GLFW_KEY_RIGHT:
-		currentPoint = (currentPoint + 1) % 8;
-		break;
-	case GLFW_KEY_LEFT:
-		currentPoint = (currentPoint - 1) % 8;
-		if (currentPoint < 0)
-			currentPoint = 7;
-		break;
-	case GLFW_KEY_X:
-		points[currentPoint][1].x += modifier * 5;
-		points[pairIndex][2].x -= modifier * 5;
-		curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-		*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-		*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-		curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-		*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-		controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(-modifier * 5, 0.0f, 0.0f));
-		controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(modifier * 5, 0.0f, 0.0f));
-		break;
-	case GLFW_KEY_Y:
-		points[currentPoint][1].y += modifier * 5;
-		points[pairIndex][2].y -= modifier * 5;
-		curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-		*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-		*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-		curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-		*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-		controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(0.0f, -modifier * 5, 0.0f));
-		controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(0.0f, modifier * 5, 0.0f));
-		break;
-	case GLFW_KEY_Z:
-		points[currentPoint][1].z += modifier * 5;
-		points[pairIndex][2].z -= modifier * 5;
-		curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-		*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-		*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-		curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-		*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-		controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(0.0f, 0.0f, -modifier * 5));
-		controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(0.0f, 0.0f, modifier * 5));
-		break;
-	case GLFW_KEY_P:
-		sphereIsRiding = !sphereIsRiding;
-		break;
+			debugMode = !debugMode;
+		case GLFW_KEY_W:
+			moveCamera(camDir, camDir, cameraSpeed);
+			break;
+		case GLFW_KEY_A:
+			moveCamera(-glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
+			break;
+		case GLFW_KEY_S:
+			moveCamera(-camDir, camDir, cameraSpeed);
+			break;
+		case GLFW_KEY_D:
+			moveCamera(glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
+			break;
+		case GLFW_KEY_RIGHT:
+			currentPoint = (currentPoint + 1) % 8;
+			break;
+		case GLFW_KEY_LEFT:
+			currentPoint = (currentPoint - 1) % 8;
+			if (currentPoint < 0)
+				currentPoint = 7;
+			break;
+		case GLFW_KEY_X:
+			points[currentPoint][1].x += modifier * 5;
+			points[pairIndex][2].x -= modifier * 5;
+			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
+			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
+			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
+			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
+			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
+			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(-modifier * 5, 0.0f, 0.0f));
+			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(modifier * 5, 0.0f, 0.0f));
+			break;
+		case GLFW_KEY_Y:
+			points[currentPoint][1].y += modifier * 5;
+			points[pairIndex][2].y -= modifier * 5;
+			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
+			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
+			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
+			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
+			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
+			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(0.0f, -modifier * 5, 0.0f));
+			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(0.0f, modifier * 5, 0.0f));
+			break;
+		case GLFW_KEY_Z:
+			points[currentPoint][1].z += modifier * 5;
+			points[pairIndex][2].z -= modifier * 5;
+			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
+			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
+			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
+			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
+			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
+			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(0.0f, 0.0f, -modifier * 5));
+			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(0.0f, 0.0f, modifier * 5));
+			break;
+		case GLFW_KEY_P:
+			sphereIsRiding = !sphereIsRiding;
+			break;
+		}
 	}
 }
 
@@ -538,7 +540,6 @@ void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
 		+ zLerpFactor * ((1 - xLerpFactor)*terrain->map[xIndex][zIndex + 1] + xLerpFactor * terrain->map[xIndex + 1][zIndex + 1]);
 	if (abs(eyeY + heightOffset - lastY) > 1) {
 		Window::camPos.y = eyeY + heightOffset;
-		printf("%f\n", Window::camPos.y);
 	}
 	cam_look_at = Window::camPos + camDir;
 	Window::V = glm::lookAt(Window::camPos, cam_look_at, cam_up);

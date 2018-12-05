@@ -26,7 +26,7 @@ private:
 	glm::vec3 color;
 	GLuint shader;
 public:
-	Terrain(int size, GLuint shader);
+	Terrain(int size, GLuint shader, char* texturePath);
 	~Terrain();
 	double **map;
 	void update();
@@ -35,6 +35,7 @@ public:
 	void draw(GLuint shaderProgram, glm::mat4 C);
 	void updateMinMaxCoordinates(float x, float y, float z);
 	void shiftAndResizeSphere();
+	void loadTexture(char* path);
 
 	glm::mat4 toWorld;
 
