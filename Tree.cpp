@@ -4,7 +4,7 @@ using namespace std;
 
 Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 {
-	recursions = 8;
+	recursions = 6;
 	this->treeSystem = treeSystem;
 	this->currentPos = startPos;
 	this->currentDir = glm::vec3(0.0f, 1.0f, 0.0f); // tree starts pointing up in y direction
@@ -118,7 +118,7 @@ void Tree::draw(GLuint shaderProgram, glm::mat4 C) {
 	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 	glBindVertexArray(VAO);
 
-	glLineWidth(2);
+	glLineWidth(3);
 	// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
 	glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
@@ -188,7 +188,7 @@ void Tree::generateVertices(std::string language)
 			vertices.push_back(currentPos);
 
 			//if (branchLevel >= recursions-1)
-			if (c == '0')
+			if (c == '0' || c == '3')
 			{
 				colors.push_back(glm::vec3(0.0f,1.0f,0.0f));
 				colors.push_back(glm::vec3(0.0f,1.0f,0.0f));
@@ -268,7 +268,7 @@ void Tree::generateVertices(std::string language)
 			}
 		}
 	}
-	//printf("\nverticessizein genverts:%d", vertices.size());
+	printf("\nverticessizein genverts:%d", vertices.size());
 }
 
 void Tree::updateMinMaxCoordinates(float x, float y, float z) {
