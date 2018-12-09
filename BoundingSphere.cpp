@@ -1,20 +1,10 @@
-#include "Geometry.h"
+#include "BoundingSphere.h"
 
-using namespace std;
-unsigned int loadCubemap2(vector<std::string> faces);
+bool BoundingSphere::debugMode = false;
 
-std::vector<std::string> faces = {
-	"../skybox/right.jpg",
-	"../skybox/left.jpg",
-	"../skybox/top.jpg",
-	"../skybox/bottom.jpg",
-	"../skybox/front.jpg",
-	"../skybox/back.jpg"
-};
+BoundingSphere::BoundingSphere() {};
 
-Geometry::Geometry() {}
-
-Geometry::Geometry(char* filepath, GLuint shader, glm::vec3 color)
+BoundingSphere::BoundingSphere(char* filepath, GLuint shader, glm::vec3 color)
 {
 	toWorld = glm::mat4(1.0f);
 	min_x = std::numeric_limits<float>::max();
@@ -32,7 +22,6 @@ Geometry::Geometry(char* filepath, GLuint shader, glm::vec3 color)
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &normalBuffer);
-	glGenBuffers(1, &texBuffer);
 	glGenBuffers(1, &EBO);
 
 	// Bind the Vertex Array Object (VAO) first, then bind the associated buffers to it.
@@ -54,21 +43,9 @@ Geometry::Geometry(char* filepath, GLuint shader, glm::vec3 color)
 		3 * sizeof(GLfloat), // Offset between consecutive indices. Since each of our vertices have 3 floats, they should have the size of 3 floats in between
 		(GLvoid*)0); // Offset of the first vertex's component. In our case it's 0 since we don't pad the vertices array with anything.
 
-	glBindBuffer(GL_ARRAY_BUFFER, texBuffer);
-	glBufferData(GL_ARRAY_BUFFER, texels.size() * sizeof(glm::vec2), texels.data(), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(
-		1,                                // attribute
-		2,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		2 * sizeof(GLfloat),                                // stride
-		(GLvoid*)0                          // array buffer offset
-	);
-
 	glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
 	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
-	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(
 		2,                                // attribute
 		3,                                // size
@@ -88,28 +65,24 @@ Geometry::Geometry(char* filepath, GLuint shader, glm::vec3 color)
 	// Unbind the VAO now so we don't accidentally tamper with it.
 	// NOTE: You must NEVER unbind the element array buffer associated with a VAO!
 	glBindVertexArray(0);
-
-	unsigned int cubemapTexture = loadCubemap2(faces);
 }
 
-
-Geometry::~Geometry()
+BoundingSphere::~BoundingSphere()
 {
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
 	glDeleteBuffers(1, &normalBuffer);
-	glDeleteBuffers(1, &texBuffer);
 }
 
-void Geometry::draw(GLuint shaderProgram, glm::mat4 C) {
+void BoundingSphere::draw(GLuint shaderProgram, glm::mat4 C) {
 	// Calculate the combination of the model and view (camera inverse) matrices
 	glm::mat4 model = glm::inverse(Window::V)*C*toWorld;
 	glm::mat4 view = Window::V;
 
 	glm::vec3 newCenter = view * model * glm::vec4(center, 1.0f);
 
-	if (!Window::culling || isVisible(newCenter, radius)) {
+	if (BoundingSphere::debugMode) {
 		//render object
 		glUseProgram(shader);
 
@@ -131,24 +104,22 @@ void Geometry::draw(GLuint shaderProgram, glm::mat4 C) {
 		// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 		glBindVertexArray(VAO);
 		// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glLineWidth(1);
+		glDrawElements(GL_LINE_STRIP, indices.size(), GL_UNSIGNED_INT, 0);
 		//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
 		// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
 		glBindVertexArray(0);
 	}
 }
 
-void Geometry::update()
-{
-	//spin(1.0f);
-}
+void BoundingSphere::update() {}
 
-void Geometry::scale(double x)
+void BoundingSphere::scale(double x)
 {
 	toWorld = toWorld * glm::scale(glm::mat4(1.0f), glm::vec3(x));
 }
 
-void Geometry::parse(const char *filepath)
+void BoundingSphere::parse(const char *filepath)
 {
 
 	// Populate the face indices, vertices, and normals vectors with the OBJ Object data
@@ -191,7 +162,7 @@ void Geometry::parse(const char *filepath)
 
 }
 
-void Geometry::updateMinMaxCoordinates(float x, float y, float z)
+void BoundingSphere::updateMinMaxCoordinates(float x, float y, float z)
 {
 	if (x > max_x) max_x = x;
 	if (x < min_x) min_x = x;
@@ -201,7 +172,7 @@ void Geometry::updateMinMaxCoordinates(float x, float y, float z)
 	if (z < min_z) min_z = z;
 }
 
-void Geometry::shiftAndResizeModel()
+void BoundingSphere::shiftAndResizeModel()
 {
 	// Find center of model
 	GLfloat avg_x = (max_x + min_x) / 2.0f;
@@ -253,49 +224,4 @@ void Geometry::shiftAndResizeModel()
 	min_y /= max_coord;
 	max_z /= max_coord;
 	min_z /= max_coord;
-}
-
-unsigned int loadCubemap2(vector<std::string> faces)
-{
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-	int width, height, nrChannels;
-	for (unsigned int i = 0; i < faces.size(); i++)
-	{
-		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-		if (data)
-		{
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-			);
-			stbi_image_free(data);
-		}
-		else
-		{
-			printf("Cubemap texture failed to load at path: %s\n", faces[i]);
-			stbi_image_free(data);
-		}
-	}
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	return textureID;
-}
-
-bool Geometry::isVisible(glm::vec3 point, float r)
-{
-	for (int i = 0; i < Window::planesNormals.size(); i++) {
-		float dist = Window::dist(Window::planesNormals[i], Window::planesPoints[i], point);
-		if (dist < -r) {
-			return false;
-		}
-	}
-	return true;
 }

@@ -5,10 +5,10 @@ Geometry *sphere, *redPoint, *greenPoint;
 Cube *cube;
 Curve *curves[8], *nbCurves[8];
 Terrain *terrain;
-Transform *world, *anchorTranslations[8], *controlTranslations[16], *sphereTranslation, *sphereScale;
-Transform *armyT[1000];
+Transform *world, *boundingSpheres, *anchorTranslations[8], *controlTranslations[16],
+*sphereTranslation, *sphereScale, *boundTranslation, *boundScale;
+BoundingSphere *boundingSphere;
 GLint Window::objShader, Window::cubeShader, colorShader, terrainShader, treeShader;
-glm::vec3 lastSpherePos;
 
 // Default camera parameters
 glm::vec3 Window::camPos(0.0f, 0.0f, 200.0f);		// e  | Position of camera
@@ -41,14 +41,7 @@ glm::vec2 Window::lastPoint = glm::vec2(0.0f, 0.0f);
 glm::mat4 Window::P;
 glm::mat4 Window::V;
 
-std::vector<glm::vec3> points[8];
-int currentPoint = 0;
-int sphereCurve = 0;
-int spherePoint = 0;
-float curvesLength = 0.0f;
-bool sphereIsRiding = true;
 float lastTime = 0.0f;
-float distance = 0.0f;
 int terrainLength = 513;
 
 //////
@@ -82,64 +75,27 @@ void Window::initialize_objects()
 	printf(result2.c_str());
 	printf("\n\n");
 
-	/*sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
-	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
+	sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
+	boundingSphere = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1,1,1));
+	/*redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
 	greenPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 1.0f, 0.0f));
-	*/world = new Transform(glm::mat4(1.0f));
+	*/
+	world = new Transform(glm::mat4(1.0f));
 	
-	for (int i = 0; i < 32; i++) {
-		if (i != 0 && i % 4 == 0) {
-			points[i / 4].push_back(points[i / 4 - 1][3]);
-		}
-		else if (i != 1 && i % 4 == 1) {
-			points[i / 4].push_back(points[i / 4 - 1][3]*2.0f - points[i / 4 - 1][2]);
-		}
-		else if (i == 30) {
-			points[i / 4].push_back(points[0][0] - (points[0][1] - points[0][0]));
-		}
-		else if (i == 31) {
-			points[i / 4].push_back(points[0][0]);
-		}
-		else {
-			float x = rand() % 100 - 50;
-			float y = rand() % 100 - 50;
-			float z = rand() % 100 - 50;
-			points[i / 4].push_back(glm::vec3(x, y, z));
-		}
-	}
-
-	//for (int i = 0; i < 8; i++) {
-	//	curves[i] = new Curve(points[i], glm::vec3(0.0f, 0.0f, 0.0f), colorShader);
-	//	curvesLength += curves[i]->totalDistance;
-	//	nbCurves[i] = new Curve(points[i][2], points[(i + 1) % 8][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader);
-	//	//world->addChild(curves[i]);
-	//	//world->addChild(nbCurves[i]);
-	//	anchorTranslations[i] = new Transform(glm::translate(glm::mat4(1.0f), points[i][0]));
-	//	anchorTranslations[i]->addChild(redPoint);
-	//	controlTranslations[2 * i] = new Transform(glm::translate(glm::mat4(1.0f), points[i][1]));
-	//	controlTranslations[2 * i]->addChild(greenPoint);
-	//	controlTranslations[2 * i + 1] = new Transform(glm::translate(glm::mat4(1.0f), points[i][2]));
-	//	controlTranslations[2 * i + 1]->addChild(greenPoint);
-	//	//world->addChild(anchorTranslations[i]);
-	//	//world->addChild(controlTranslations[2*i]);
-	//	//world->addChild(controlTranslations[2 * i + 1]);
-	//}
-	
-	sphereTranslation = new Transform(glm::translate(glm::mat4(1.0f), points[0][0]));
-	lastSpherePos = points[0][0];
-	sphereScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
-	sphereScale->addChild(sphere);
+	sphereTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, 30, 180)));
+	sphereScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+	//sphereScale->addChild(sphere);
+	sphereScale->addChild(boundingSphere);
 	sphereTranslation->addChild(sphereScale);
 	cube = new Cube();
 
 	terrain = new Terrain(terrainLength, terrainShader, "../textures/grass.ppm");
 
 	startPos = glm::vec3(0, terrain->map[terrainLength/2][150+terrainLength / 2] - 2, 150);
-	//printf("x,y,z:")
 	tree1 = new Tree(treeShader, system1, startPos);
 
 	world->addChild(cube);
-	//world->addChild(sphereTranslation);
+	world->addChild(sphereTranslation);
 	world->addChild(terrain);
 	world->radius = 9999999;
 
@@ -327,11 +283,7 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 {
 	// Check for a key press
 	
-	int modifier = mods == GLFW_MOD_SHIFT ? -1 : 1;
-	int pairIndex = (currentPoint - 1) % 8;
-	if (pairIndex == -1)
-		pairIndex = 7;
-	
+	int modifier = mods == GLFW_MOD_SHIFT ? -1 : 1;	
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
@@ -368,49 +320,9 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 		case GLFW_KEY_D:
 			moveCamera(glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
 			break;
-		case GLFW_KEY_RIGHT:
-			currentPoint = (currentPoint + 1) % 8;
-			break;
-		case GLFW_KEY_LEFT:
-			currentPoint = (currentPoint - 1) % 8;
-			if (currentPoint < 0)
-				currentPoint = 7;
-			break;
-		case GLFW_KEY_X:
-			points[currentPoint][1].x += modifier * 5;
-			points[pairIndex][2].x -= modifier * 5;
-			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(-modifier * 5, 0.0f, 0.0f));
-			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(modifier * 5, 0.0f, 0.0f));
-			break;
-		case GLFW_KEY_Y:
-			points[currentPoint][1].y += modifier * 5;
-			points[pairIndex][2].y -= modifier * 5;
-			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(0.0f, -modifier * 5, 0.0f));
-			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(0.0f, modifier * 5, 0.0f));
-			break;
-		case GLFW_KEY_Z:
-			points[currentPoint][1].z += modifier * 5;
-			points[pairIndex][2].z -= modifier * 5;
-			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(0.0f, 0.0f, -modifier * 5));
-			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(0.0f, 0.0f, modifier * 5));
-			break;
-		case GLFW_KEY_P:
-			sphereIsRiding = !sphereIsRiding;
+		case GLFW_KEY_C:
+			printf("%d\n", action);
+			BoundingSphere::debugMode = !BoundingSphere::debugMode;
 			break;
 		}
 	}

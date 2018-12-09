@@ -18,18 +18,18 @@
 
 class Geometry:public Node
 {
-private:
+public:
 	std::vector<GLuint> indices;
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> texels;
 	glm::vec3 color;
-	GLuint shader;
 
 	void shiftAndResizeModel();
-public:
+	Geometry();
 	Geometry(char* filepath, GLuint shader, glm::vec3 color);
 	~Geometry();
+
 
 	void update();
 	void scale(double);
@@ -40,7 +40,8 @@ public:
 
 	glm::mat4 toWorld;
 
-	GLuint VBO, VAO, EBO, normalBuffer, texBuffer;;
+	GLuint VBO, VAO, EBO, normalBuffer, texBuffer;
+	GLuint shader;
 };
 
 #endif
