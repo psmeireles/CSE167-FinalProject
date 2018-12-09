@@ -4,7 +4,7 @@ using namespace std;
 
 Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 {
-	GLint recursions = 4;
+	GLint recursions = 8;
 	this->treeSystem = treeSystem;
 	this->currentPos = startPos;
 	this->currentDir = glm::vec3(0.0f, 1.0f, 0.0f); // tree starts pointing up in y direction
@@ -14,10 +14,10 @@ Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 	this->shader = shader;
 
 	std::string language = this->treeSystem->generateString(recursions);
-	printf("language:%s\n", language.c_str());
+	//printf("language:%s\n", language.c_str());
 	generateVertices(language);
 
-	printf("verticesSize:%d\n", vertices.size());
+	//printf("verticesSize:%d\n", vertices.size());
 	for (int i = 0; i <vertices.size(); i++)// : vertices)
 	{
 		indices.push_back(i);
@@ -118,7 +118,7 @@ void Tree::draw(GLuint shaderProgram, glm::mat4 C) {
 	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 	glBindVertexArray(VAO);
 
-	glLineWidth(10);
+	glLineWidth(1);
 	// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
 	glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
@@ -150,7 +150,7 @@ void Tree::randomize(int range) {
 
 void Tree::generateVertices(std::string language)
 {
-	printf("Generatedvertices: %s\n", language.c_str());
+	//printf("Generatedvertices: %s\n", language.c_str());
 	std::vector<char> variables = this->treeSystem->getVariables();
 	std::vector<GLfloat> params = this->treeSystem->getParams();
 	std::unordered_map<char, GLfloat> variableMap;
@@ -170,12 +170,15 @@ void Tree::generateVertices(std::string language)
 	//    + = rotate right (y axis)
 	//    < = rotate left (x axis)
 	//    > = rotate right (x axis)
+	//    ^ = rotate left (z axis)
+	//    & = rogate right (z axis)
 	// randomize the angle from 0.9 to 1.1: ex so 45 deg turn might become 40deg or 50 deg, but still
 	// in the same general direction
-	printf("chars:");
+	//printf("chars:");
+	GLfloat proportion = 0.1f;
 	for (auto c : language)
 	{
-		printf("%c ", c);
+		//printf("%c ", c);
 		
 		if (isalpha(c) || isdigit(c))
 		{
@@ -191,7 +194,9 @@ void Tree::generateVertices(std::string language)
 				{
 				case '[':
 					positionStack.push_back(std::pair < glm::vec3, glm::vec3 >(currentPos, currentDir));
-					rotateDir(-variableMap.at(c),glm::vec3(0.0f, 0.0f, 1.0f));
+					rotateDir(-variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+					proportion += 0.05f;
+					proportion = std::min(1.0f, proportion);
 					break;
 				case ']':
 					temp = positionStack.back();
@@ -199,20 +204,38 @@ void Tree::generateVertices(std::string language)
 					currentPos = temp.first; // retrieves saved pos and direction from stack
 					currentDir = temp.second;
 					rotateDir(variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+					proportion -= 0.05f;
+					proportion = std::max(0.5f, proportion);
 					break;
-				case '-':
-					rotateDir(-variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
-					break;
-				case '+':
-					rotateDir(variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
-					break;
-				case '<':
-					rotateDir(-variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
-					break;
-				case '>':
-					rotateDir(variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
-					break;
-
+				/*case 'r':
+					printf("r");
+					int num = rand() % 6;
+					switch (num)
+					{
+						*/
+					case '-': // case '-'
+						rotateDir(-variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
+						break;
+					case '+': // case '+'
+						rotateDir(variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
+						printf("%f", variableMap.at(c));
+						break;
+					case '<': // case '<'
+						rotateDir(-variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
+						break;
+					case '>': // case '>'
+						rotateDir(variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
+						break;
+					case '^': // case '^'
+						printf("^");
+						rotateDir(-variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+						break;
+					case '&': // case '&'
+						printf("^");
+						rotateDir(variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+						break;
+					/*}
+					break;*/
 				}
 			}
 			catch (const std::exception&)
@@ -221,7 +244,7 @@ void Tree::generateVertices(std::string language)
 			}
 		}
 	}
-	printf("\nverticessizein genverts:%d", vertices.size());
+	//printf("\nverticessizein genverts:%d", vertices.size());
 }
 
 void Tree::updateMinMaxCoordinates(float x, float y, float z) {

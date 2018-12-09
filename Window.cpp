@@ -53,22 +53,26 @@ int terrainLength = 513;
 
 //////
 
-std::vector<char> variables = { '0', '1' , '[', ']'};
-std::vector<GLfloat> params = { 1.0f, 1.0f, 45.0f, 45.0f};
+std::vector<char> variables = { '0', '1' , '[', ']', '^', '&', 'r'};
+std::vector<GLfloat> params = { 1.0f, 1.0f, 0.0f, 0.0f, 20.0f, 20.0f, 0.0f};
 std::string initString = "0";
-std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[0]0"} });
+std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[^^^^0][^^0][&0]&&&0"} });
+//std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[rrrr0][rr0][r0]rrr0"} });
 LSystem * system1 = new LSystem(variables, params, initString, ruleMap);
 std::string result = system1->generateString(3);
 
 
 Tree * tree1;
+std::vector<Tree *> trees;
+int maxTrees = 100;
 glm::vec3 startPos(0.0f, 0.0f, 180.0f);
+Transform * treeScale;
 
 void Window::initialize_objects()
 {
-	printf("\nLSystemTest:");
-	printf(result.c_str());
-	printf("\n\n");
+	//printf("\nLSystemTest:");
+	//printf(result.c_str());
+	//printf("\n\n");
 	
 	// Load the shader program. Make sure you have the correct filepath up top
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
@@ -78,9 +82,9 @@ void Window::initialize_objects()
 	treeShader = LoadShaders("../treeShader.vert", "../treeShader.frag");
 
 	std::string result2 = system1->generateString(3);
-	printf("\nLSystemTest:");
-	printf(result2.c_str());
-	printf("\n\n");
+	//printf("\nLSystemTest:");
+	//printf(result2.c_str());
+	//printf("\n\n");
 
 	/*sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
 	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -137,13 +141,29 @@ void Window::initialize_objects()
 	startPos = glm::vec3(0, terrain->map[terrainLength/2][150+terrainLength / 2] - 2, 150);
 	//printf("x,y,z:")
 	tree1 = new Tree(treeShader, system1, startPos);
+	startPos = glm::vec3(0.0f);
+	Tree * t = new Tree(treeShader, system1, startPos);
+	treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.15f)));
+	treeScale->addChild(t);
+	for (int i = 0; i < maxTrees; i++)
+	{
+		int xPos = rand() % terrainLength - terrainLength / 2;
+		int zPos = rand() % terrainLength - terrainLength / 2;
+		startPos = glm::vec3(xPos, terrain->map[xPos+terrainLength / 2][zPos + terrainLength / 2] - 2, zPos);
+		Transform * t = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] - 2, zPos)));
+		//trees.push_back(t);
+		//treeScale->addChild(t);
+		t->addChild(treeScale);
+		world->addChild(t);
+	}
 
 	world->addChild(cube);
 	//world->addChild(sphereTranslation);
 	world->addChild(terrain);
 	world->radius = 9999999;
 
-	world->addChild(tree1);
+	//world->addChild(tree1);
+	//world->addChild(treeScale);
 
 }
 

@@ -18,6 +18,7 @@
 #include "LSystem.h"
 #include <utility>
 #include <unordered_map>
+#include <algorithm>
 
 class Tree :
 	public Node
