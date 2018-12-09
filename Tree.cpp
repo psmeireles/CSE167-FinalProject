@@ -4,7 +4,7 @@ using namespace std;
 
 Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 {
-	GLint recursions = 8;
+	recursions = 8;
 	this->treeSystem = treeSystem;
 	this->currentPos = startPos;
 	this->currentDir = glm::vec3(0.0f, 1.0f, 0.0f); // tree starts pointing up in y direction
@@ -27,7 +27,7 @@ Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &texBuffer);
-	glGenBuffers(1, &normalBuffer);
+	glGenBuffers(1, &colorBuffer);
 	glGenBuffers(1, &EBO);
 
 	// Bind the Vertex Array Object (VAO) first, then bind the associated buffers to it.
@@ -61,8 +61,8 @@ Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 		(GLvoid*)0                          // array buffer offset
 	);
 
-	glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(
 		2,                                // attribute
@@ -88,7 +88,7 @@ Tree::~Tree()
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
-	glDeleteBuffers(1, &normalBuffer);
+	glDeleteBuffers(1, &colorBuffer);
 }
 
 void Tree::draw(GLuint shaderProgram, glm::mat4 C) {
@@ -118,7 +118,7 @@ void Tree::draw(GLuint shaderProgram, glm::mat4 C) {
 	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 	glBindVertexArray(VAO);
 
-	glLineWidth(1);
+	glLineWidth(2);
 	// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
 	glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
@@ -174,17 +174,32 @@ void Tree::generateVertices(std::string language)
 	//    & = rogate right (z axis)
 	// randomize the angle from 0.9 to 1.1: ex so 45 deg turn might become 40deg or 50 deg, but still
 	// in the same general direction
-	//printf("chars:");
-	GLfloat proportion = 0.1f;
+	printf("chars:");
+	GLint branchLevel = 0;
 	for (auto c : language)
 	{
 		//printf("%c ", c);
 		
-		if (isalpha(c) || isdigit(c))
+		if ( (isalpha(c) && isupper(c)) || isdigit(c))
 		{
 			vertices.push_back(currentPos);
+			
 			currentPos += currentDir * variableMap.at(c); // scales direction by the param value
 			vertices.push_back(currentPos);
+
+			//if (branchLevel >= recursions-1)
+			if (c == '0')
+			{
+				colors.push_back(glm::vec3(0.0f,1.0f,0.0f));
+				colors.push_back(glm::vec3(0.0f,1.0f,0.0f));
+			}
+			else
+			{
+				colors.push_back(glm::vec3(0.376f, 0.219f, 0.086f));
+				colors.push_back(glm::vec3(0.376f, 0.219f, 0.086f));
+
+			}
+
 		}
 		else
 		{
@@ -195,8 +210,7 @@ void Tree::generateVertices(std::string language)
 				case '[':
 					positionStack.push_back(std::pair < glm::vec3, glm::vec3 >(currentPos, currentDir));
 					rotateDir(-variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
-					proportion += 0.05f;
-					proportion = std::min(1.0f, proportion);
+					branchLevel++;
 					break;
 				case ']':
 					temp = positionStack.back();
@@ -204,34 +218,44 @@ void Tree::generateVertices(std::string language)
 					currentPos = temp.first; // retrieves saved pos and direction from stack
 					currentDir = temp.second;
 					rotateDir(variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
-					proportion -= 0.05f;
-					proportion = std::max(0.5f, proportion);
+					branchLevel--;
 					break;
 				/*case 'r':
 					printf("r");
 					int num = rand() % 6;
+					printf("%d", num);
 					switch (num)
 					{
 						*/
-					case '-': // case '-'
+					case '-': 
+					//case 0: 
+						//printf("-");
 						rotateDir(-variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
 						break;
-					case '+': // case '+'
+					case '+': 
+					//case 1:
+						//printf("+");
 						rotateDir(variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
-						printf("%f", variableMap.at(c));
+						//printf("%f", variableMap.at(c));
 						break;
-					case '<': // case '<'
+					case '<': 
+					//case 2:
+						//printf("<");
 						rotateDir(-variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
 						break;
-					case '>': // case '>'
+					case '>': 
+					//case 3:
+						//printf(">");
 						rotateDir(variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
 						break;
-					case '^': // case '^'
-						printf("^");
+					case '^':
+					//case 4:
+						//printf("^");
 						rotateDir(-variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
 						break;
-					case '&': // case '&'
-						printf("^");
+					case '&': 
+					//case 5:
+						//printf("&");
 						rotateDir(variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
 						break;
 					/*}

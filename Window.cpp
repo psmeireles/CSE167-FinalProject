@@ -53,10 +53,10 @@ int terrainLength = 513;
 
 //////
 
-std::vector<char> variables = { '0', '1' , '[', ']', '^', '&', 'r'};
-std::vector<GLfloat> params = { 1.0f, 1.0f, 0.0f, 0.0f, 20.0f, 20.0f, 0.0f};
+std::vector<char> variables = { '0', '1' , '[', ']', '-', '+', '<', '>', '^', '&', 'r'};
+std::vector<GLfloat> params = { 1.0f, 1.0f, 0.0f, 0.0f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f};
 std::string initString = "0";
-std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[^^^^0][^^0][&0]&&&0"} });
+std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[^^^^<<0][^^>>0][&<<0]&&&>>0"} });
 //std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[rrrr0][rr0][r0]rrr0"} });
 LSystem * system1 = new LSystem(variables, params, initString, ruleMap);
 std::string result = system1->generateString(3);
@@ -139,8 +139,15 @@ void Window::initialize_objects()
 	terrain = new Terrain(terrainLength, terrainShader, "../textures/grass.ppm");
 
 	startPos = glm::vec3(0, terrain->map[terrainLength/2][150+terrainLength / 2] - 2, 150);
+	startPos = glm::vec3(0.0f);
+
 	//printf("x,y,z:")
 	tree1 = new Tree(treeShader, system1, startPos);
+	Transform * t1 = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, terrain->map[terrainLength / 2][150 + terrainLength / 2] - 2, 150)));
+	Transform * ts1 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)));
+	ts1->addChild(tree1);
+	t1->addChild(ts1);
+
 	startPos = glm::vec3(0.0f);
 	Tree * t = new Tree(treeShader, system1, startPos);
 	treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.15f)));
@@ -162,7 +169,7 @@ void Window::initialize_objects()
 	world->addChild(terrain);
 	world->radius = 9999999;
 
-	//world->addChild(tree1);
+	//world->addChild(t1);
 	//world->addChild(treeScale);
 
 }
