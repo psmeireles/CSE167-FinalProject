@@ -41,7 +41,6 @@ Terrain::Terrain(int size, GLuint shader, char* texturePath)
 
 	this->color = glm::vec3(0.0, 1.0, 0.0);
 	this->shader = shader;
-	objIsSelected = true;
 
 	// Create array object and buffers. Remember to delete your buffers when the object is destroyed!
 	glGenVertexArrays(1, &VAO);

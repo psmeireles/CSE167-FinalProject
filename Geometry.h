@@ -32,16 +32,15 @@ public:
 	~Geometry();
 
 	void update();
-	void spin(float);
 	void scale(double);
 	void parse(const char* filepath);
 	void draw(GLuint shaderProgram, glm::mat4 C);
 	void updateMinMaxCoordinates(float x, float y, float z);
-	void shiftAndResizeSphere();
+	bool isVisible(glm::vec3 point, float r);
 
 	glm::mat4 toWorld;
 
-	GLuint VBO, VAO, EBO, normalBuffer, texBuffer;
+	GLuint VBO, VAO, EBO, normalBuffer, texBuffer;;
 };
 
 #endif

@@ -25,7 +25,7 @@ Geometry::Geometry(char* filepath, GLuint shader, glm::vec3 color)
 	parse(filepath);
 	this->color = color;
 	this->shader = shader;
-	objIsSelected = true;
+
 	// Create array object and buffers. Remember to delete your buffers when the object is destroyed!
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -97,39 +97,43 @@ Geometry::~Geometry()
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
 	glDeleteBuffers(1, &normalBuffer);
+	glDeleteBuffers(1, &texBuffer);
 }
 
 void Geometry::draw(GLuint shaderProgram, glm::mat4 C) {
-
-	glUseProgram(shader);
-
 	// Calculate the combination of the model and view (camera inverse) matrices
 	glm::mat4 model = glm::inverse(Window::V)*C*toWorld;
 	glm::mat4 view = Window::V;
 
-	// We need to calcullate this because modern OpenGL does not keep track of any matrix other than the viewport (D)
-	// Consequently, we need to forward the projection, view, and model matrices to the shader programs
-	// Get the location of the uniform variables "projection" and "modelview"
-	GLuint uProjection = glGetUniformLocation(shader, "projection");
-	GLuint uColor = glGetUniformLocation(shader, "color");
-	GLuint uModel = glGetUniformLocation(shader, "model");
-	GLuint uView = glGetUniformLocation(shader, "view");
-	GLuint uCamPos = glGetUniformLocation(shader, "cameraPos");
-	// Now send these values to the shader program
-	glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
-	glUniformMatrix4fv(uModel, 1, GL_FALSE, &model[0][0]);
-	glUniformMatrix4fv(uView, 1, GL_FALSE, &view[0][0]);
-	glUniform3fv(uCamPos, 1, &Window::camPos[0]);
-	glUniform3fv(uColor, 1, &this->color[0]);
+	glm::vec3 newCenter = view * model * glm::vec4(center, 1.0f);
 
-	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
-	glBindVertexArray(VAO);
-	// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-	//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
-	// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
-	glBindVertexArray(0);
+	if (!Window::culling || isVisible(newCenter, radius)) {
+		//render object
+		glUseProgram(shader);
 
+		// We need to calcullate this because modern OpenGL does not keep track of any matrix other than the viewport (D)
+		// Consequently, we need to forward the projection, view, and model matrices to the shader programs
+		// Get the location of the uniform variables "projection" and "modelview"
+		GLuint uProjection = glGetUniformLocation(shader, "projection");
+		GLuint uColor = glGetUniformLocation(shader, "color");
+		GLuint uModel = glGetUniformLocation(shader, "model");
+		GLuint uView = glGetUniformLocation(shader, "view");
+		GLuint uCamPos = glGetUniformLocation(shader, "cameraPos");
+		// Now send these values to the shader program
+		glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
+		glUniformMatrix4fv(uModel, 1, GL_FALSE, &model[0][0]);
+		glUniformMatrix4fv(uView, 1, GL_FALSE, &view[0][0]);
+		glUniform3fv(uCamPos, 1, &Window::camPos[0]);
+		glUniform3fv(uColor, 1, &this->color[0]);
+
+		// Now draw the OBJObject. We simply need to bind the VAO associated with it.
+		glBindVertexArray(VAO);
+		// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
+		// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
+		glBindVertexArray(0);
+	}
 }
 
 void Geometry::update()
@@ -181,7 +185,7 @@ void Geometry::parse(const char *filepath)
 	}
 	fclose(fp);
 
-	shiftAndResizeSphere();
+	shiftAndResizeModel();
 
 }
 
@@ -201,6 +205,7 @@ void Geometry::shiftAndResizeModel()
 	GLfloat avg_x = (max_x + min_x) / 2.0f;
 	GLfloat avg_y = (max_y + min_y) / 2.0f;
 	GLfloat avg_z = (max_z + min_z) / 2.0f;
+	this->center = glm::vec3(avg_x, avg_y, avg_z);
 
 	// Shifting max and mins
 	max_x -= avg_x;
@@ -223,7 +228,8 @@ void Geometry::shiftAndResizeModel()
 		max_coord = max_abs_z;
 	}
 
-	// Shifting and resizing all vertices
+	// Shifting and resizing all vertices and finding grater distance from center
+	this->radius = 0;
 	for (int i = 0; i < vertices.size(); i++) {
 		vertices[i].x -= avg_x;
 		vertices[i].x /= max_coord;
@@ -231,6 +237,11 @@ void Geometry::shiftAndResizeModel()
 		vertices[i].y /= max_coord;
 		vertices[i].z -= avg_z;
 		vertices[i].z /= max_coord;
+
+		float distance = abs(glm::distance(center, vertices[i]));
+		if (distance > this->radius) {
+			this->radius = distance;
+		}
 	}
 
 	// Resizing max and mins
@@ -276,7 +287,13 @@ unsigned int loadCubemap2(vector<std::string> faces)
 	return textureID;
 }
 
-void Geometry::shiftAndResizeSphere()
+bool Geometry::isVisible(glm::vec3 point, float r)
 {
-
+	for (int i = 0; i < Window::planesNormals.size(); i++) {
+		float dist = Window::dist(Window::planesNormals[i], Window::planesPoints[i], point);
+		if (dist < -r) {
+			return false;
+		}
+	}
+	return true;
 }
