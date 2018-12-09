@@ -75,18 +75,20 @@ void Window::initialize_objects()
 	printf(result2.c_str());
 	printf("\n\n");
 
-	sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
+	sphere = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
 	boundingSphere = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1,1,1));
 	/*redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
 	greenPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 1.0f, 0.0f));
 	*/
 	world = new Transform(glm::mat4(1.0f));
 	
-	sphereTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, 30, 180)));
-	sphereScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
-	//sphereScale->addChild(sphere);
-	sphereScale->addChild(boundingSphere);
+	sphereTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, 10, 180)));
+	sphereScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 5.0f)));
+	boundScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+	sphereScale->addChild(sphere);
+	boundScale->addChild(boundingSphere);
 	sphereTranslation->addChild(sphereScale);
+	sphereTranslation->addChild(boundScale);
 	cube = new Cube();
 
 	terrain = new Terrain(terrainLength, terrainShader, "../textures/grass.ppm");
@@ -321,7 +323,6 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 			moveCamera(glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
 			break;
 		case GLFW_KEY_C:
-			printf("%d\n", action);
 			BoundingSphere::debugMode = !BoundingSphere::debugMode;
 			break;
 		}
@@ -443,6 +444,7 @@ void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
 	float lastY = Window::camPos.y;
 
 	movementDir.y = 0;
+	movementDir = glm::normalize(movementDir);
 	Window::camPos += speed * movementDir;
 	xLerpFactor = Window::camPos.x - (int)Window::camPos.x;
 	zLerpFactor = Window::camPos.z - (int)Window::camPos.z;
