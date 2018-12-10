@@ -46,6 +46,7 @@ public:
 	void draw(GLuint shaderProgram, glm::mat4 C);
 	void shiftAndResizeSphere();
 	void updateMinMaxCoordinates(float x, float y, float z);
+	void updateBuffers();
 
 	std::vector < std::pair < glm::vec3, glm::vec3 >> positionStack; // keeps track of prev position and direction
 
@@ -55,6 +56,8 @@ public:
 	GLint recursions;
 	GLuint VBO, VAO, EBO, colorBuffer, texBuffer;
 	GLint treeType;
+	std::string language;
+	glm::vec3 startPos;
 };
 
 #endif

@@ -137,6 +137,10 @@ void Transform::update()
 {
 
 }
+void Transform::update(glm::mat4 transform)
+{
+	this->M = transform;
+}
 
 void Transform::scale(double x)
 {

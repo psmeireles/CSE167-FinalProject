@@ -33,6 +33,7 @@ public:
 	void removeChild();
 	void draw(GLuint shaderProgram, glm::mat4 C);
 	void update();
+	void update(glm::mat4 transform);
 	void scale(double);
 	void updateMinMaxCoordinates(float x, float y, float z);
 	void shiftAndResizeSphere();
