@@ -44,7 +44,7 @@ public:
 	void rotate(GLfloat angle, glm::vec3 axis);
 	void rotateDir(GLfloat angle, glm::vec3 axis);
 	void draw(GLuint shaderProgram, glm::mat4 C);
-	void shiftAndResizeSphere();
+	void shiftAndResizeModel();
 	void updateMinMaxCoordinates(float x, float y, float z);
 
 	std::vector < std::pair < glm::vec3, glm::vec3 >> positionStack; // keeps track of prev position and direction

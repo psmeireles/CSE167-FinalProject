@@ -22,6 +22,8 @@ public:
 	void scale(double);
 	void parse(const char* filepath);
 	void updateMinMaxCoordinates(float x, float y, float z);
+	float getRadius();
+	glm::vec3 getCenter();
 
 	static bool debugMode;
 

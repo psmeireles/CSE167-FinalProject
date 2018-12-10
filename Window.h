@@ -19,7 +19,6 @@
 #include "LSystem.h"
 #include "Tree.h"
 #include "BoundingSphere.h"
-#include <glm/gtc/quaternion.hpp>
 #include <vector>
 #include <cstdlib>
 

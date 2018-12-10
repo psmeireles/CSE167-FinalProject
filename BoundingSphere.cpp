@@ -100,7 +100,6 @@ void BoundingSphere::draw(GLuint shaderProgram, glm::mat4 C) {
 		glUniformMatrix4fv(uView, 1, GL_FALSE, &view[0][0]);
 		glUniform3fv(uCamPos, 1, &Window::camPos[0]);
 		glUniform3fv(uColor, 1, &this->color[0]);
-
 		// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 		glBindVertexArray(VAO);
 		// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
@@ -224,4 +223,17 @@ void BoundingSphere::shiftAndResizeModel()
 	min_y /= max_coord;
 	max_z /= max_coord;
 	min_z /= max_coord;
+}
+
+float BoundingSphere::getRadius() {
+	return glm::distance(center, vertices[0]);
+}
+
+glm::vec3 BoundingSphere::getCenter() {
+	glm::vec3 cent(0.0f, 0.0f, 0.0f);
+	for (auto v : vertices) {
+		cent += v;
+	}
+	center = cent;
+	return cent/(float)vertices.size();
 }

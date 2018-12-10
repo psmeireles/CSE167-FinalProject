@@ -185,9 +185,11 @@ void Tree::generateVertices(std::string language)
 		if ( (isalpha(c) && isupper(c)) || isdigit(c))
 		{
 			vertices.push_back(currentPos);
+			updateMinMaxCoordinates(currentPos.x, currentPos.y, currentPos.z);
 			
 			currentPos += currentDir * variableMap.at(c); // scales direction by the param value
 			vertices.push_back(currentPos);
+			updateMinMaxCoordinates(currentPos.x, currentPos.y, currentPos.z);
 
 			//if (branchLevel >= recursions-1)
 			if (c == '0' || c == '3')
@@ -272,12 +274,68 @@ void Tree::generateVertices(std::string language)
 		}
 	}
 	//printf("\nverticessizein genverts:%d", vertices.size());
+
+	shiftAndResizeModel();
 }
 
 void Tree::updateMinMaxCoordinates(float x, float y, float z) {
-
+	if (x > max_x) max_x = x;
+	if (x < min_x) min_x = x;
+	if (y > max_y) max_y = y;
+	if (y < min_y) min_y = y;
+	if (z > max_z) max_z = z;
+	if (z < min_z) min_z = z;
 }
 
-void Tree::shiftAndResizeSphere() {
+void Tree::shiftAndResizeModel() {
+	// Find center of model
+	GLfloat avg_x = (max_x + min_x) / 2.0f;
+	GLfloat avg_y = (max_y + min_y) / 2.0f;
+	GLfloat avg_z = (max_z + min_z) / 2.0f;
+	this->center = glm::vec3(avg_x, avg_y, avg_z);
 
+	// Shifting max and mins
+	max_x -= avg_x;
+	min_x -= avg_x;
+	max_y -= avg_y;
+	min_y -= avg_y;
+	max_z -= avg_z;
+	min_z -= avg_z;
+
+	// Finding max coordinate
+	GLfloat max_abs_x = abs(max_x) > abs(min_x) ? abs(max_x) : abs(min_x);
+	GLfloat max_abs_y = abs(max_y) > abs(min_y) ? abs(max_y) : abs(min_y);
+	GLfloat max_abs_z = abs(max_z) > abs(min_z) ? abs(max_z) : abs(min_z);
+
+	GLfloat max_coord = max_abs_x;
+	if (max_coord < max_abs_y) {
+		max_coord = max_abs_y;
+	}
+	if (max_coord < max_abs_z) {
+		max_coord = max_abs_z;
+	}
+
+	// Shifting and resizing all vertices and finding grater distance from center
+	this->radius = 0;
+	for (int i = 0; i < vertices.size(); i++) {
+		vertices[i].x -= avg_x;
+		vertices[i].x /= max_coord;
+		vertices[i].y -= avg_y;
+		vertices[i].y /= max_coord;
+		vertices[i].z -= avg_z;
+		vertices[i].z /= max_coord;
+
+		float distance = abs(glm::distance(glm::vec3(0.0f, 0.0f, 0.0f), vertices[i]));
+		if (distance > this->radius) {
+			this->radius = distance;
+		}
+	}
+
+	// Resizing max and mins
+	max_x /= max_coord;
+	min_x /= max_coord;
+	max_y /= max_coord;
+	min_y /= max_coord;
+	max_z /= max_coord;
+	min_z /= max_coord;
 }
