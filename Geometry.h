@@ -18,30 +18,30 @@
 
 class Geometry:public Node
 {
-private:
+public:
 	std::vector<GLuint> indices;
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> texels;
 	glm::vec3 color;
-	GLuint shader;
 
 	void shiftAndResizeModel();
-public:
+	Geometry();
 	Geometry(char* filepath, GLuint shader, glm::vec3 color);
 	~Geometry();
 
+
 	void update();
-	void spin(float);
 	void scale(double);
 	void parse(const char* filepath);
 	void draw(GLuint shaderProgram, glm::mat4 C);
 	void updateMinMaxCoordinates(float x, float y, float z);
-	void shiftAndResizeSphere();
+	bool isVisible(glm::vec3 point, float r);
 
 	glm::mat4 toWorld;
 
 	GLuint VBO, VAO, EBO, normalBuffer, texBuffer;
+	GLuint shader;
 };
 
 #endif

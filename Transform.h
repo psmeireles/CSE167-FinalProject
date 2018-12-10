@@ -17,8 +17,6 @@
 
 class Transform:public Node
 {
-private:
-	void parseSphere();
 public:
 	Transform(glm::mat4 transform);
 	~Transform();
@@ -26,24 +24,13 @@ public:
 	glm::mat4 M;
 	std::list<Node*> childNodes;
 
-	float radius;
-	glm::vec3 center;
-
 	void addChild(Node* node);
 	void removeChild();
 	void draw(GLuint shaderProgram, glm::mat4 C);
 	void update();
 	void update(glm::mat4 transform);
 	void scale(double);
-	void updateMinMaxCoordinates(float x, float y, float z);
-	void shiftAndResizeSphere();
-	bool isVisible(glm::vec3 point, float r);
-
-	bool objIsSelected;
-
-	int lastState;
-	static int nRendered;
-
+	
 	GLuint VBO, VAO, EBO, normalBuffer;
 };
 

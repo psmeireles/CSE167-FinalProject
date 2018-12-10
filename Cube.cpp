@@ -56,7 +56,6 @@ Cube::Cube()
 		skyboxVertices.push_back(V[i]);
 	}
 
-	objIsSelected = true;
 	// Create array object and buffers. Remember to delete your buffers when the object is destroyed!
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);

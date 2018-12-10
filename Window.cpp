@@ -1,19 +1,22 @@
 #include "window.h"
 
 const char* window_title = "GLFW Starter Project";
-Geometry *sphere, *redPoint, *greenPoint;
+Geometry *redPoint, *greenPoint;
 Cube *cube;
 Curve *curves[8], *nbCurves[8];
 Terrain *terrain;
-Transform *world, *anchorTranslations[8], *controlTranslations[16], *sphereTranslation, *sphereScale;
-Transform *armyT[1000];
+Transform *world;
 GLint Window::objShader, Window::cubeShader, colorShader, terrainShader, treeShader;
-glm::vec3 lastSpherePos;
+
+std::vector<BoundingSphere*> boundVols;
 
 // Default camera parameters
-glm::vec3 Window::camPos(0.0f, 0.0f, 200.0f);		// e  | Position of camera
+glm::vec3 Window::camPos(0.0f, 0.0f, 10.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
+
+Transform *cameraScale, *cameraTranslate;
+BoundingSphere *cameraBound;
 
 int Window::width;
 int Window::height;
@@ -26,29 +29,17 @@ glm::vec3 Window::fc, Window::fbl, Window::ftl, Window::fbr, Window::ftr,
 std::vector<glm::vec3> Window::planesNormals, Window::planesPoints;
 bool Window::culling = true;
 
+bool first = true;
 bool firstMouse = true;
 bool Window::movement = false;
 bool toggleModel = true;
 int Window::normalColor = 0;
-int eyeDir = 0;
-int clapCount = 0;
-int signal = 1;
-int clapSignal = 1;
-bool first = true;
-bool debugMode = false;
 
 glm::vec2 Window::lastPoint = glm::vec2(0.0f, 0.0f);
 glm::mat4 Window::P;
 glm::mat4 Window::V;
 
-std::vector<glm::vec3> points[8];
-int currentPoint = 0;
-int sphereCurve = 0;
-int spherePoint = 0;
-float curvesLength = 0.0f;
-bool sphereIsRiding = true;
 float lastTime = 0.0f;
-float distance = 0.0f;
 int terrainLength = 513;
 
 //////
@@ -73,9 +64,11 @@ std::unordered_map<char, std::string> ruleMap3({ {'1', "11"} , { '0', "1[^^<<0][
 LSystem * system3 = new LSystem(variables3, params3, initString3, ruleMap3);
 
 Tree * tree1;
+
 std::vector<Transform *> treeTransforms;
-int maxTrees = 200;
-glm::vec3 startPos(0.0f, 0.0f, 180.0f);
+int maxTrees = 100;
+glm::vec3 startPos(0.0f, 0.0f, 0.0f);
+
 Transform * treeScale;
 Transform * treeScale2;
 Transform * treeScale3;
@@ -83,103 +76,69 @@ Tree * t;
 Tree * t2;
 Tree * t3;
 
-void Window::initialize_objects()
-{
+void detectColision();
+// I'll keep a list to know which objects are colliding with the player so that I can change colors when they stop colliding
+std::set<BoundingSphere*> collidingObjs;
 
-	
+void Window::initialize_objects()
+{	
 	// Load the shader program. Make sure you have the correct filepath up top
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
 	cubeShader = LoadShaders("../cubeShader.vert", "../cubeShader.frag");
 	colorShader = LoadShaders("../colorShader.vert", "../colorShader.frag");
 	terrainShader = LoadShaders("../terrainShader.vert", "../terrainShader.frag");
 	treeShader = LoadShaders("../treeShader.vert", "../treeShader.frag");
-
-
-	/*sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
-	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
-	greenPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 1.0f, 0.0f));
-	*/world = new Transform(glm::mat4(1.0f));
 	
-	for (int i = 0; i < 32; i++) {
-		if (i != 0 && i % 4 == 0) {
-			points[i / 4].push_back(points[i / 4 - 1][3]);
-		}
-		else if (i != 1 && i % 4 == 1) {
-			points[i / 4].push_back(points[i / 4 - 1][3]*2.0f - points[i / 4 - 1][2]);
-		}
-		else if (i == 30) {
-			points[i / 4].push_back(points[0][0] - (points[0][1] - points[0][0]));
-		}
-		else if (i == 31) {
-			points[i / 4].push_back(points[0][0]);
-		}
-		else {
-			float x = rand() % 100 - 50;
-			float y = rand() % 100 - 50;
-			float z = rand() % 100 - 50;
-			points[i / 4].push_back(glm::vec3(x, y, z));
-		}
-	}
-
-	//for (int i = 0; i < 8; i++) {
-	//	curves[i] = new Curve(points[i], glm::vec3(0.0f, 0.0f, 0.0f), colorShader);
-	//	curvesLength += curves[i]->totalDistance;
-	//	nbCurves[i] = new Curve(points[i][2], points[(i + 1) % 8][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader);
-	//	//world->addChild(curves[i]);
-	//	//world->addChild(nbCurves[i]);
-	//	anchorTranslations[i] = new Transform(glm::translate(glm::mat4(1.0f), points[i][0]));
-	//	anchorTranslations[i]->addChild(redPoint);
-	//	controlTranslations[2 * i] = new Transform(glm::translate(glm::mat4(1.0f), points[i][1]));
-	//	controlTranslations[2 * i]->addChild(greenPoint);
-	//	controlTranslations[2 * i + 1] = new Transform(glm::translate(glm::mat4(1.0f), points[i][2]));
-	//	controlTranslations[2 * i + 1]->addChild(greenPoint);
-	//	//world->addChild(anchorTranslations[i]);
-	//	//world->addChild(controlTranslations[2*i]);
-	//	//world->addChild(controlTranslations[2 * i + 1]);
-	//}
+	world = new Transform(glm::mat4(1.0f));
 	
-	sphereTranslation = new Transform(glm::translate(glm::mat4(1.0f), points[0][0]));
-	lastSpherePos = points[0][0];
-	sphereScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
-	sphereScale->addChild(sphere);
-	sphereTranslation->addChild(sphereScale);
 	cube = new Cube();
 
 	terrain = new Terrain(terrainLength, terrainShader, "../textures/grass.ppm");
 
 	startPos = glm::vec3(0.0f);
 
-	// Test tree for debugging
-	tree1 = new Tree(treeShader, system2, startPos, 2);
-	Transform * t1 = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, terrain->map[terrainLength / 2][150 + terrainLength / 2] - 2, 150)));
-	Transform * ts1 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.45f)));
-	ts1->addChild(tree1);
-	t1->addChild(ts1);
-
-	// 3 trees used for the world
 	t = new Tree(treeShader, system1, startPos, 0);
 	t2 = new Tree(treeShader, system2, startPos, 1);
 	t3 = new Tree(treeShader, system3, startPos, 2);
-	treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.55f)));
-	treeScale2 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.45f)));
-	treeScale3 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.85f)));
+	treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(20.0f)));
+	treeScale2 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(20.0f)));
+	treeScale3 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(20.0f)));
 	treeScale->addChild(t);
 	treeScale2->addChild(t2);
 	treeScale3->addChild(t3);
+
+	float maxRadius = t->radius;
+	if (t2->radius > maxRadius) {
+		maxRadius = t2->radius;
+	}
+	if (t3->radius > maxRadius) {
+		maxRadius = t3->radius;
+	}
 	for (int i = 0; i < maxTrees; i++)
 	{
 		int xPos = rand() % terrainLength - terrainLength / 2;
 		int zPos = rand() % terrainLength - terrainLength / 2;
 		startPos = glm::vec3(xPos, terrain->map[xPos+terrainLength / 2][zPos + terrainLength / 2] - 2, zPos);
-		Transform * t = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] - 2, zPos)));
+		Transform * t = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] + 18, zPos)));
+
+		BoundingSphere *sphere = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 1.0f, 1.0f));
+		Transform *boundScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(maxRadius*20)));
+		boundScale->addChild(sphere);
+		sphere->radius *= maxRadius * 20;
+		sphere->center = t->M*glm::vec4(sphere->center, 1.0f);
+		boundVols.push_back(sphere);
+		t->addChild(boundScale);
 		int num = rand() % 5;
 		switch (num)
 		{
-		case 0: case 2:t->addChild(treeScale);
+		case 0: case 2:
+			t->addChild(treeScale);
 			break;
-		case 1: case 3:t->addChild(treeScale2);
+		case 1: case 3:
+			t->addChild(treeScale2);
 			break;
-		case 4: t->addChild(treeScale3);
+		case 4: 
+			t->addChild(treeScale3);
 			break;
 		}
 		treeTransforms.push_back(t);
@@ -187,22 +146,26 @@ void Window::initialize_objects()
 	}
 
 	world->addChild(cube);
-	//world->addChild(sphereTranslation);
 	world->addChild(terrain);
 	world->radius = 9999999;
 
-	//world->addChild(t1);
-	//world->addChild(treeScale);
-
 	// Set initial eye view at terrain level
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
+	cameraBound = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1.0f));
+	cameraScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(5.0f)));
+	cameraTranslate = new Transform(glm::translate(glm::mat4(1.0f), camPos));
+	cameraBound->radius *= 5.0f;
+	cameraBound->center = camPos;
+	cameraScale->addChild(cameraBound);
+	cameraTranslate->addChild(cameraScale);
+	world->addChild(cameraTranslate);
+	boundVols.push_back(cameraBound);
 	moveCamera(camDir, camDir, 0);
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.
 void Window::clean_up()
 {
-	delete(sphere);
 	delete(cube);
 	glDeleteProgram(objShader);
 	glDeleteProgram(cubeShader);
@@ -313,53 +276,10 @@ void Window::resize_callback(GLFWwindow* window, int width, int height)
 
 void Window::idle_callback()
 {
-	
-	//float velocity = 0.0f;
-	//if (sphereIsRiding) {
-	//	velocity = curvesLength / (8*3);
-	//}
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
-	lastTime = now;
-	//distance += velocity * deltaT;
-	////printf("%f\n", distance);
-	//int nextPointIndex;
-	//glm::vec3 newSpherePos;
-	//if (sphereIsRiding) {
-	//	nextPointIndex = curves[sphereCurve]->getNextPointIndex(spherePoint, &distance);
-	//	while (nextPointIndex == -1) {
-	//		sphereCurve = (sphereCurve + 1) % 8;
-	//		spherePoint = 0;
-	//		nextPointIndex = curves[sphereCurve]->getNextPointIndex(spherePoint, &distance);
-	//	}
-	//}
-	//else {
-	//	nextPointIndex = spherePoint;
-	//}
-
-	//glm::vec3 pointBefore = curves[sphereCurve]->getPoint(nextPointIndex);
-	//glm::vec3 pointAfter;
-	//if (nextPointIndex == 150) {
-	//	pointAfter = curves[sphereCurve+1]->getPoint(1);
-	//}
-	//else {
-	//	pointAfter = curves[sphereCurve]->getPoint(nextPointIndex + 1);
-	//}
-	//float adjacentPointsD = glm::abs(glm::distance(pointAfter, pointBefore));
-	//newSpherePos = (pointBefore*(adjacentPointsD - distance) + pointAfter * distance) / adjacentPointsD;
-
-	////newSpherePos = curves[sphereCurve]->getPoint(nextPointIndex);
-	//spherePoint = nextPointIndex;
-	//sphereTranslation->M = glm::translate(sphereTranslation->M, -lastSpherePos);
-	//sphereTranslation->M = glm::translate(sphereTranslation->M, newSpherePos);
-	//lastSpherePos = newSpherePos;
-	//
-
-	///*glm::vec3 newSpherePos = curves[sphereMovCounter / 151]->getPoint(sphereMovCounter % 151);
-	//sphereTranslation->M = glm::translate(sphereTranslation->M, -lastSpherePos);
-	//sphereTranslation->M = glm::translate(sphereTranslation->M, newSpherePos);
-	//lastSpherePos = newSpherePos;
-	//sphereMovCounter = (sphereMovCounter + 1)%(8*151);*/
+	lastTime = now;	
+	detectColision();
 }
 
 void Window::display_callback(GLFWwindow* window)
@@ -379,16 +299,13 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 {
 	// Check for a key press
 	
-	int modifier = mods == GLFW_MOD_SHIFT ? -1 : 1;
-	int pairIndex = (currentPoint - 1) % 8;
-	if (pairIndex == -1)
-		pairIndex = 7;
-	
+	int modifier = mods == GLFW_MOD_SHIFT ? -1 : 1;	
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
 	float cameraSpeed = 3*100.0f*deltaT;
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
+	
 	if (action = GLFW_PRESS) {
 		switch (key) {
 			// Check if escape was pressed
@@ -398,16 +315,6 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 		case GLFW_KEY_N:
 			Window::normalColor = (Window::normalColor + 1) % 2;
 			break;
-		case GLFW_KEY_TAB:
-			Window::culling = !Window::culling;
-			break;
-		case GLFW_KEY_1:
-			if (debugMode == false)
-				P = glm::perspective(glm::radians(80.0f), ratio, nearDist, farDist);
-			else
-				P = glm::perspective(fov, ratio, nearDist, farDist);
-
-			debugMode = !debugMode;
 		case GLFW_KEY_W:
 			moveCamera(camDir, camDir, cameraSpeed);
 			break;
@@ -420,49 +327,8 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 		case GLFW_KEY_D:
 			moveCamera(glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
 			break;
-		case GLFW_KEY_RIGHT:
-			currentPoint = (currentPoint + 1) % 8;
-			break;
-		case GLFW_KEY_LEFT:
-			currentPoint = (currentPoint - 1) % 8;
-			if (currentPoint < 0)
-				currentPoint = 7;
-			break;
-		case GLFW_KEY_X:
-			points[currentPoint][1].x += modifier * 5;
-			points[pairIndex][2].x -= modifier * 5;
-			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(-modifier * 5, 0.0f, 0.0f));
-			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(modifier * 5, 0.0f, 0.0f));
-			break;
-		case GLFW_KEY_Y:
-			points[currentPoint][1].y += modifier * 5;
-			points[pairIndex][2].y -= modifier * 5;
-			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(0.0f, -modifier * 5, 0.0f));
-			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(0.0f, modifier * 5, 0.0f));
-			break;
-		case GLFW_KEY_Z:
-			points[currentPoint][1].z += modifier * 5;
-			points[pairIndex][2].z -= modifier * 5;
-			curvesLength -= curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*curves[currentPoint] = *(new Curve(points[currentPoint], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			*curves[pairIndex] = *(new Curve(points[pairIndex], glm::vec3(0.0f, 0.0f, 0.0f), colorShader));
-			curvesLength += curves[currentPoint]->totalDistance + curves[pairIndex]->totalDistance;
-			*nbCurves[pairIndex] = *(new Curve(points[pairIndex][2], points[currentPoint][1], glm::vec3(1.0f, 1.0f, 0.0f), colorShader));
-			controlTranslations[2 * pairIndex + 1]->M = glm::translate(controlTranslations[2 * pairIndex + 1]->M, glm::vec3(0.0f, 0.0f, -modifier * 5));
-			controlTranslations[(2 * pairIndex + 2) % 16]->M = glm::translate(controlTranslations[(2 * pairIndex + 2) % 16]->M, glm::vec3(0.0f, 0.0f, modifier * 5));
-			break;
-		case GLFW_KEY_P:
-			sphereIsRiding = !sphereIsRiding;
+		case GLFW_KEY_C:
+			BoundingSphere::debugMode = !BoundingSphere::debugMode;
 			break;
 		case GLFW_KEY_T:
 			if (mods == GLFW_MOD_SHIFT)
@@ -472,8 +338,9 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 				{
 					int xPos = rand() % terrainLength - terrainLength / 2;
 					int zPos = rand() % terrainLength - terrainLength / 2;
-					startPos = glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] - 2, zPos);
-					treeTransforms[i]->update(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] - 2, zPos)));
+					startPos = glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] + 18, zPos);
+					treeTransforms[i]->update(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] + 18, zPos)));
+					boundVols[i]->center = startPos;
 				}
 			}
 			else // Randomize the branches
@@ -506,9 +373,9 @@ void Window::mouse_button_callback(GLFWwindow* window, int button, int action, i
 
 void Window::scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-	if (toggleModel) {
+	/*if (toggleModel) {
 		world->scale(yoffset > 0.0f ? 1.1 : 0.9);
-	}
+	}*/
 }
 
 void Window::cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -572,22 +439,6 @@ void Window::cursor_position_callback(GLFWwindow* window, double xpos, double yp
 	}
 }
 
-glm::vec3 Window::trackBallMapping(glm::vec2 point)
-{
-	glm::vec3 v;
-	float d;
-	v.x = (2.0*point.x - width) / width;
-	v.y = (height - 2.0*point.y) / height;
-	v.z = 0;
-	d = v.length();
-	d = (d < 1.0) ? d : sqrt(0.5);
-	v.z = camPos.z;
-	v.x /= v.length();
-	v.y /= v.length();
-	v.z /= v.length();
-	return v;
-}
-
 float Window::dist(glm::vec3 planeNormal, glm::vec3 planePoint, glm::vec3 point) {
 	float dist = glm::dot(point - planePoint, planeNormal);
 
@@ -601,8 +452,10 @@ void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
 	int xIndex, zIndex;
 	int heightOffset = 10;
 	float lastY = Window::camPos.y;
+	glm::vec3 lastPos = Window::camPos;
 
 	movementDir.y = 0;
+	movementDir = glm::normalize(movementDir);
 	Window::camPos += speed * movementDir;
 	xLerpFactor = Window::camPos.x - (int)Window::camPos.x;
 	zLerpFactor = Window::camPos.z - (int)Window::camPos.z;
@@ -615,4 +468,49 @@ void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
 	}
 	cam_look_at = Window::camPos + camDir;
 	Window::V = glm::lookAt(Window::camPos, cam_look_at, cam_up);
+
+	// Updating bounding sphere
+	glm::mat4 translation = glm::translate(glm::mat4(1.0f), Window::camPos - lastPos);
+	cameraTranslate->M = translation * cameraTranslate->M;
+	cameraBound->center = translation * glm::vec4(cameraBound->center, 1.0f);
+	printf("%f, %f, %f\n", camPos.x, camPos.y, camPos.z);
+}
+
+void detectColision() {
+	int numCol = 0;
+	for (int i = 0; i < boundVols.size(); i++) {
+		BoundingSphere* obj1 = boundVols[i];
+		for (int j = i + 1; j < boundVols.size(); j++) {
+			BoundingSphere* obj2 = boundVols[j];
+			if (obj1 != obj2) {
+				if (glm::distance(obj1->center, obj2->center) < obj1->radius + obj2->radius) {
+					numCol++;
+					boundVols[i]->color = glm::vec3(1, 0, 0);
+					boundVols[j]->color = glm::vec3(1, 0, 0);
+
+					// check if camera is involved in collision and add object
+					if (j == boundVols.size() - 1) {
+						// check if object has already been added to colliding list
+						if (std::find(collidingObjs.begin(), collidingObjs.end(), boundVols[i]) == collidingObjs.end()) {
+							collidingObjs.insert(boundVols[i]);
+						}
+					}
+				}
+				else if (j == boundVols.size() - 1) {
+					std::set<BoundingSphere*>::iterator it = std::find(collidingObjs.begin(), collidingObjs.end(), boundVols[i]);
+					if (it != collidingObjs.end()) {
+						collidingObjs.erase(it);
+						boundVols[i]->color = glm::vec3(1.0f);
+					}
+				}
+			}
+		}
+	}
+	if (first) {
+		printf("%d\n", numCol);
+		first = false;
+	}
+	if (collidingObjs.size() == 0) {
+		cameraBound->color = glm::vec3(1.0f);
+	}
 }

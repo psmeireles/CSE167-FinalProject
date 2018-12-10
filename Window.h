@@ -18,9 +18,10 @@
 #include "shader.h"
 #include "LSystem.h"
 #include "Tree.h"
-#include <glm/gtc/quaternion.hpp>
+#include "BoundingSphere.h"
 #include <vector>
 #include <cstdlib>
+#include <set>
 
 class Window
 {
@@ -59,5 +60,4 @@ public:
 
 	static void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed);
 };
-
 #endif
