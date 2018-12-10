@@ -2,8 +2,9 @@
 
 using namespace std;
 
-Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
+Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos, GLint treeType)
 {
+	this->treeType = treeType;
 	recursions = 6;
 	this->treeSystem = treeSystem;
 	this->currentPos = startPos;
@@ -133,6 +134,7 @@ void Tree::update()
 
 void Tree::rotateDir(GLfloat angle, glm::vec3 axis)
 {
+	angle = angle * (rand() / (RAND_MAX + 1.) / 5 + 0.9);
 	currentDir = glm::vec3(glm::rotate(glm::mat4(1.0f), angle / 180.0f * glm::pi<float>(), axis) * glm::vec4(currentDir, 0.0f)) ;
 	
 	currentDir = glm::normalize(currentDir); // normalizes the direction vector after rotation
@@ -174,12 +176,12 @@ void Tree::generateVertices(std::string language)
 	//    & = rogate right (z axis)
 	// randomize the angle from 0.9 to 1.1: ex so 45 deg turn might become 40deg or 50 deg, but still
 	// in the same general direction
-	printf("chars:");
+	//printf("chars:");
 	GLint branchLevel = 0;
 	for (auto c : language)
 	{
 		//printf("%c ", c);
-		
+
 		if ( (isalpha(c) && isupper(c)) || isdigit(c))
 		{
 			vertices.push_back(currentPos);
@@ -190,8 +192,9 @@ void Tree::generateVertices(std::string language)
 			//if (branchLevel >= recursions-1)
 			if (c == '0' || c == '3')
 			{
-				colors.push_back(glm::vec3(0.0f,1.0f,0.0f));
-				colors.push_back(glm::vec3(0.0f,1.0f,0.0f));
+				GLfloat greenColor = (rand() % 156 + 100) / 255.;
+				colors.push_back(glm::vec3(75.0f*(treeType%2)/255.,greenColor,20.0f*treeType/255.));
+				colors.push_back(glm::vec3(75.0f*(treeType%2)/255.,greenColor,20.0f*treeType/255.));
 			}
 			else
 			{
@@ -268,7 +271,7 @@ void Tree::generateVertices(std::string language)
 			}
 		}
 	}
-	printf("\nverticessizein genverts:%d", vertices.size());
+	//printf("\nverticessizein genverts:%d", vertices.size());
 }
 
 void Tree::updateMinMaxCoordinates(float x, float y, float z) {

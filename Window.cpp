@@ -54,23 +54,23 @@ int terrainLength = 513;
 //////
 
 std::vector<char> variables = { '0', '1' , '[', ']', '-', '+', '<', '>', '^', '&'};
-std::vector<GLfloat> params = { 1.0f, 1.0f, 0.0f, 0.0f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f};
+std::vector<GLfloat> params = { 2.0f, 1.0f, 0.0f, 0.0f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f};
 std::string initString = "0";
 std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[^^^^<<0][^^>>0][&<<0]&&&>>0"} });
 LSystem * system1 = new LSystem(variables, params, initString, ruleMap);
 
 std::vector<char> variables2 = { '0', '1' , '[', ']', '-', '+', '<', '>', '^', '&'};
-std::vector<GLfloat> params2 = { 1.0f, 1.0f, 0.0f, 0.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f};
+std::vector<GLfloat> params2 = { 2.0f, 1.0f, 0.0f, 0.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f};
 std::string initString2 = "0";
-std::unordered_map<char, std::string> ruleMap2({ {'1', "11"},{'0', "1^[[0]&0]&1[&0]^0"} });
+std::unordered_map<char, std::string> ruleMap2({ {'1', "11"},{'0', "1^[[<0]&>0]&1[&<0]^0"} });
 LSystem * system2 = new LSystem(variables2, params2, initString2, ruleMap2);
 
 std::vector<char> variables3 = { '0', '1', '3', '[', ']', '-', '+', '<', '>', '^', '&'};
-std::vector<GLfloat> params3 = { 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f, 45.0f};
+std::vector<GLfloat> params3 = { 2.0f, 1.0f, 1.0f, 0.0f, 0.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f};
 std::string initString3 = "0";
 //std::unordered_map<char, std::string> ruleMap3({ {'1', "11"},{'0', "1^[^^^^[<<0]0&0]&[&&&&&[>>0]0^0]"} });
 //std::unordered_map<char, std::string> ruleMap3({ {'1', "11^[^0&1&0]&[&1^0^1]"} }); // , { '0', "1^[^^^^[0]3&0]&[^[0]3&0]&[&&&&&[0]3^0]" } });
-std::unordered_map<char, std::string> ruleMap3({ {'1', "11"} , { '0', "1[^^0][^0][0][0][&0][&&0]" } });
+std::unordered_map<char, std::string> ruleMap3({ {'1', "11"} , { '0', "1[^^<<0][^>>0][0][&<<0][&&>>0]" } });
 LSystem * system3 = new LSystem(variables3, params3, initString3, ruleMap3); // 11 - [-10 + 10 + 10] + [+10 - 10 - 10]
 
 
@@ -79,7 +79,7 @@ std::string result = system1->generateString(3);
 
 Tree * tree1;
 std::vector<Tree *> trees;
-int maxTrees = 500;
+int maxTrees = 100;
 glm::vec3 startPos(0.0f, 0.0f, 180.0f);
 Transform * treeScale;
 Transform * treeScale2;
@@ -159,16 +159,16 @@ void Window::initialize_objects()
 	startPos = glm::vec3(0.0f);
 
 	//printf("x,y,z:")
-	tree1 = new Tree(treeShader, system3, startPos);
+	tree1 = new Tree(treeShader, system2, startPos, 2);
 	Transform * t1 = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, terrain->map[terrainLength / 2][150 + terrainLength / 2] - 2, 150)));
-	Transform * ts1 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(1.0f)));
+	Transform * ts1 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
 	ts1->addChild(tree1);
 	t1->addChild(ts1);
 
 	startPos = glm::vec3(0.0f);
-	Tree * t = new Tree(treeShader, system1, startPos);
-	Tree * t2 = new Tree(treeShader, system2, startPos);
-	Tree * t3 = new Tree(treeShader, system3, startPos);
+	Tree * t = new Tree(treeShader, system1, startPos, 0);
+	Tree * t2 = new Tree(treeShader, system2, startPos, 1);
+	Tree * t3 = new Tree(treeShader, system3, startPos, 2);
 	treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.55f)));
 	treeScale2 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.45f)));
 	treeScale3 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.85f)));
@@ -202,6 +202,9 @@ void Window::initialize_objects()
 	//world->addChild(t1);
 	//world->addChild(treeScale);
 
+	// Set initial eye view at terrain level
+	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
+	moveCamera(camDir, camDir, 0);
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.
@@ -392,9 +395,10 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
-	float cameraSpeed = 100.0f*deltaT;
+	float cameraSpeed = 3*100.0f*deltaT;
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
 	if (action = GLFW_PRESS) {
+		printf("%f\n", (rand() / (RAND_MAX + 1.) / 5 + 0.9));
 		switch (key) {
 			// Check if escape was pressed
 		case(GLFW_KEY_ESCAPE):

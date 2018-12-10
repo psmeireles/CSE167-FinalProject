@@ -35,7 +35,7 @@ private:
 	glm::vec3 currentDir;
 
 public:
-	Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos);
+	Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos, GLint treeType);
 	~Tree();
 
 	void generateVertices(std::string);
@@ -54,6 +54,7 @@ public:
 	LSystem * treeSystem;
 	GLint recursions;
 	GLuint VBO, VAO, EBO, colorBuffer, texBuffer;
+	GLint treeType;
 };
 
 #endif
