@@ -68,28 +68,24 @@ LSystem * system2 = new LSystem(variables2, params2, initString2, ruleMap2);
 std::vector<char> variables3 = { '0', '1', '3', '[', ']', '-', '+', '<', '>', '^', '&'};
 std::vector<GLfloat> params3 = { 2.0f, 1.0f, 1.0f, 0.0f, 0.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f};
 std::string initString3 = "0";
-//std::unordered_map<char, std::string> ruleMap3({ {'1', "11"},{'0', "1^[^^^^[<<0]0&0]&[&&&&&[>>0]0^0]"} });
-//std::unordered_map<char, std::string> ruleMap3({ {'1', "11^[^0&1&0]&[&1^0^1]"} }); // , { '0', "1^[^^^^[0]3&0]&[^[0]3&0]&[&&&&&[0]3^0]" } });
+
 std::unordered_map<char, std::string> ruleMap3({ {'1', "11"} , { '0', "1[^^<<0][^>>0][0][&<<0][&&>>0]" } });
-LSystem * system3 = new LSystem(variables3, params3, initString3, ruleMap3); // 11 - [-10 + 10 + 10] + [+10 - 10 - 10]
-
-
-std::string result = system1->generateString(3);
-
+LSystem * system3 = new LSystem(variables3, params3, initString3, ruleMap3);
 
 Tree * tree1;
-std::vector<Tree *> trees;
-int maxTrees = 100;
+std::vector<Transform *> treeTransforms;
+int maxTrees = 200;
 glm::vec3 startPos(0.0f, 0.0f, 180.0f);
 Transform * treeScale;
 Transform * treeScale2;
 Transform * treeScale3;
+Tree * t;
+Tree * t2;
+Tree * t3;
 
 void Window::initialize_objects()
 {
-	//printf("\nLSystemTest:");
-	//printf(result.c_str());
-	//printf("\n\n");
+
 	
 	// Load the shader program. Make sure you have the correct filepath up top
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
@@ -98,10 +94,6 @@ void Window::initialize_objects()
 	terrainShader = LoadShaders("../terrainShader.vert", "../terrainShader.frag");
 	treeShader = LoadShaders("../treeShader.vert", "../treeShader.frag");
 
-	std::string result2 = system1->generateString(3);
-	//printf("\nLSystemTest:");
-	//printf(result2.c_str());
-	//printf("\n\n");
 
 	/*sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
 	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -155,20 +147,19 @@ void Window::initialize_objects()
 
 	terrain = new Terrain(terrainLength, terrainShader, "../textures/grass.ppm");
 
-	startPos = glm::vec3(0, terrain->map[terrainLength/2][150+terrainLength / 2] - 2, 150);
 	startPos = glm::vec3(0.0f);
 
-	//printf("x,y,z:")
+	// Test tree for debugging
 	tree1 = new Tree(treeShader, system2, startPos, 2);
 	Transform * t1 = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, terrain->map[terrainLength / 2][150 + terrainLength / 2] - 2, 150)));
-	Transform * ts1 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
+	Transform * ts1 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.45f)));
 	ts1->addChild(tree1);
 	t1->addChild(ts1);
 
-	startPos = glm::vec3(0.0f);
-	Tree * t = new Tree(treeShader, system1, startPos, 0);
-	Tree * t2 = new Tree(treeShader, system2, startPos, 1);
-	Tree * t3 = new Tree(treeShader, system3, startPos, 2);
+	// 3 trees used for the world
+	t = new Tree(treeShader, system1, startPos, 0);
+	t2 = new Tree(treeShader, system2, startPos, 1);
+	t3 = new Tree(treeShader, system3, startPos, 2);
 	treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.55f)));
 	treeScale2 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.45f)));
 	treeScale3 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.85f)));
@@ -191,6 +182,7 @@ void Window::initialize_objects()
 		case 4: t->addChild(treeScale3);
 			break;
 		}
+		treeTransforms.push_back(t);
 		world->addChild(t);
 	}
 
@@ -398,7 +390,6 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 	float cameraSpeed = 3*100.0f*deltaT;
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
 	if (action = GLFW_PRESS) {
-		printf("%f\n", (rand() / (RAND_MAX + 1.) / 5 + 0.9));
 		switch (key) {
 			// Check if escape was pressed
 		case(GLFW_KEY_ESCAPE):
@@ -472,6 +463,26 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 			break;
 		case GLFW_KEY_P:
 			sphereIsRiding = !sphereIsRiding;
+			break;
+		case GLFW_KEY_T:
+			if (mods == GLFW_MOD_SHIFT)
+			{
+				// Randomize the positions
+				for (int i = 0; i < maxTrees; i++)
+				{
+					int xPos = rand() % terrainLength - terrainLength / 2;
+					int zPos = rand() % terrainLength - terrainLength / 2;
+					startPos = glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] - 2, zPos);
+					treeTransforms[i]->update(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] - 2, zPos)));
+				}
+			}
+			else // Randomize the branches
+			{
+
+				t->updateBuffers();
+				t2->updateBuffers();
+				t3->updateBuffers();
+			}
 			break;
 		}
 	}

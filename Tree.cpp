@@ -8,18 +8,32 @@ Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos, GLint treeTy
 	recursions = 6;
 	this->treeSystem = treeSystem;
 	this->currentPos = startPos;
-	this->currentDir = glm::vec3(0.0f, 1.0f, 0.0f); // tree starts pointing up in y direction
+	this->startPos = startPos;
+	//this->currentDir = glm::vec3(0.0f, 1.0f, 0.0f); // tree starts pointing up in y direction
 	
 	toWorld = glm::mat4(1.0f);
 	this->color = glm::vec3(0.0, 1.0, 0.0);
 	this->shader = shader;
 
-	std::string language = this->treeSystem->generateString(recursions);
+
+
+	updateBuffers();
+	
+}
+
+void Tree::updateBuffers()
+{
+	this->currentDir = glm::vec3(0.0f, 1.0f, 0.0f); // tree starts pointing up in y direction
+	this->currentPos = this->startPos;
+	vertices.clear();
+	colors.clear();
+	indices.clear();
+	language = this->treeSystem->generateString(recursions);
 	//printf("language:%s\n", language.c_str());
 	generateVertices(language);
 
 	//printf("verticesSize:%d\n", vertices.size());
-	for (int i = 0; i <vertices.size(); i++)// : vertices)
+	for (int i = 0; i < vertices.size(); i++)// : vertices)
 	{
 		indices.push_back(i);
 	}
@@ -82,7 +96,6 @@ Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos, GLint treeTy
 	// NOTE: You must NEVER unbind the element array buffer associated with a VAO!
 	glBindVertexArray(0);
 }
-
 
 Tree::~Tree()
 {
