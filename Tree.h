@@ -18,6 +18,7 @@
 #include "LSystem.h"
 #include <utility>
 #include <unordered_map>
+#include <algorithm>
 
 class Tree :
 	public Node
@@ -25,7 +26,7 @@ class Tree :
 private:
 	std::vector<GLuint> indices;
 	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec3> normals;
+	std::vector<glm::vec3> colors;
 	std::vector<glm::vec2> texels;
 	glm::vec3 color;
 	GLuint shader;
@@ -34,7 +35,7 @@ private:
 	glm::vec3 currentDir;
 
 public:
-	Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos);
+	Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos, GLint treeType);
 	~Tree();
 
 	void generateVertices(std::string);
@@ -51,8 +52,9 @@ public:
 	glm::mat4 toWorld;
 
 	LSystem * treeSystem;
-
-	GLuint VBO, VAO, EBO, normalBuffer, texBuffer;
+	GLint recursions;
+	GLuint VBO, VAO, EBO, colorBuffer, texBuffer;
+	GLint treeType;
 };
 
 #endif

@@ -46,24 +46,44 @@ int terrainLength = 513;
 
 //////
 
-std::vector<char> variables = { '0', '1' , '[', ']'};
-std::vector<GLfloat> params = { 1.0f, 1.0f, 45.0f, 45.0f};
+std::vector<char> variables = { '0', '1' , '[', ']', '-', '+', '<', '>', '^', '&'};
+std::vector<GLfloat> params = { 2.0f, 1.0f, 0.0f, 0.0f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f, 20.0f};
 std::string initString = "0";
-std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[0]0"} });
+std::unordered_map<char, std::string> ruleMap({ {'1', "11"},{'0', "1[^^^^<<0][^^>>0][&<<0]&&&>>0"} });
 LSystem * system1 = new LSystem(variables, params, initString, ruleMap);
+
+std::vector<char> variables2 = { '0', '1' , '[', ']', '-', '+', '<', '>', '^', '&'};
+std::vector<GLfloat> params2 = { 2.0f, 1.0f, 0.0f, 0.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f};
+std::string initString2 = "0";
+std::unordered_map<char, std::string> ruleMap2({ {'1', "11"},{'0', "1^[[<0]&>0]&1[&<0]^0"} });
+LSystem * system2 = new LSystem(variables2, params2, initString2, ruleMap2);
+
+std::vector<char> variables3 = { '0', '1', '3', '[', ']', '-', '+', '<', '>', '^', '&'};
+std::vector<GLfloat> params3 = { 2.0f, 1.0f, 1.0f, 0.0f, 0.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f, 30.0f};
+std::string initString3 = "0";
+//std::unordered_map<char, std::string> ruleMap3({ {'1', "11"},{'0', "1^[^^^^[<<0]0&0]&[&&&&&[>>0]0^0]"} });
+//std::unordered_map<char, std::string> ruleMap3({ {'1', "11^[^0&1&0]&[&1^0^1]"} }); // , { '0', "1^[^^^^[0]3&0]&[^[0]3&0]&[&&&&&[0]3^0]" } });
+std::unordered_map<char, std::string> ruleMap3({ {'1', "11"} , { '0', "1[^^<<0][^>>0][0][&<<0][&&>>0]" } });
+LSystem * system3 = new LSystem(variables3, params3, initString3, ruleMap3); // 11 - [-10 + 10 + 10] + [+10 - 10 - 10]
+
+
 std::string result = system1->generateString(3);
 
 
 Tree * tree1;
+std::vector<Tree *> trees;
+int maxTrees = 100;
 glm::vec3 startPos(0.0f, 0.0f, 0.0f);
-
+Transform * treeScale;
+Transform * treeScale2;
+Transform * treeScale3;
 void detectColision();
 
 void Window::initialize_objects()
 {
-	printf("\nLSystemTest:");
-	printf(result.c_str());
-	printf("\n\n");
+	//printf("\nLSystemTest:");
+	//printf(result.c_str());
+	//printf("\n\n");
 	
 	// Load the shader program. Make sure you have the correct filepath up top
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
@@ -73,9 +93,9 @@ void Window::initialize_objects()
 	treeShader = LoadShaders("../treeShader.vert", "../treeShader.frag");
 
 	std::string result2 = system1->generateString(3);
-	printf("\nLSystemTest:");
-	printf(result2.c_str());
-	printf("\n\n");
+	//printf("\nLSystemTest:");
+	//printf(result2.c_str());
+	//printf("\n\n");
 
 	sphere = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 0.0f, 1.0f));
 	boundingSphere1 = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1,1,1));
@@ -109,8 +129,43 @@ void Window::initialize_objects()
 
 	terrain = new Terrain(terrainLength, terrainShader, "../textures/grass.ppm");
 
-	startPos = glm::vec3(0, terrain->map[terrainLength/2][150+terrainLength / 2] - 2, 150);
-	tree1 = new Tree(treeShader, system1, startPos);
+
+	startPos = glm::vec3(0.0f);
+
+	tree1 = new Tree(treeShader, system2, startPos, 2);
+	Transform * t1 = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, terrain->map[terrainLength / 2][150 + terrainLength / 2] - 2, 150)));
+	Transform * ts1 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
+	ts1->addChild(tree1);
+	t1->addChild(ts1);
+
+	startPos = glm::vec3(0.0f);
+	Tree * t = new Tree(treeShader, system1, startPos, 0);
+	Tree * t2 = new Tree(treeShader, system2, startPos, 1);
+	Tree * t3 = new Tree(treeShader, system3, startPos, 2);
+	treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.55f)));
+	treeScale2 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.45f)));
+	treeScale3 = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.85f)));
+	treeScale->addChild(t);
+	treeScale2->addChild(t2);
+	treeScale3->addChild(t3);
+	for (int i = 0; i < maxTrees; i++)
+	{
+		int xPos = rand() % terrainLength - terrainLength / 2;
+		int zPos = rand() % terrainLength - terrainLength / 2;
+		startPos = glm::vec3(xPos, terrain->map[xPos+terrainLength / 2][zPos + terrainLength / 2] - 2, zPos);
+		Transform * t = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] - 2, zPos)));
+		int num = rand() % 5;
+		switch (num)
+		{
+		case 0: case 2:t->addChild(treeScale);
+			break;
+		case 1: case 3:t->addChild(treeScale2);
+			break;
+		case 4: t->addChild(treeScale3);
+			break;
+		}
+		world->addChild(t);
+	}
 
 	world->addChild(cube);
 	world->addChild(sphere1Translation);
@@ -118,8 +173,12 @@ void Window::initialize_objects()
 	world->addChild(terrain);
 	world->radius = 9999999;
 
-	world->addChild(tree1);
+	//world->addChild(t1);
+	//world->addChild(treeScale);
 
+	// Set initial eye view at terrain level
+	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
+	moveCamera(camDir, camDir, 0);
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.
@@ -276,9 +335,10 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
-	float cameraSpeed = 100.0f*deltaT;
+	float cameraSpeed = 3*100.0f*deltaT;
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
 	if (action = GLFW_PRESS) {
+		printf("%f\n", (rand() / (RAND_MAX + 1.) / 5 + 0.9));
 		switch (key) {
 			// Check if escape was pressed
 		case(GLFW_KEY_ESCAPE):

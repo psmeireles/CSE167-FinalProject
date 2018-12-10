@@ -2,9 +2,10 @@
 
 using namespace std;
 
-Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
+Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos, GLint treeType)
 {
-	GLint recursions = 4;
+	this->treeType = treeType;
+	recursions = 6;
 	this->treeSystem = treeSystem;
 	this->currentPos = startPos;
 	this->currentDir = glm::vec3(0.0f, 1.0f, 0.0f); // tree starts pointing up in y direction
@@ -14,10 +15,10 @@ Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 	this->shader = shader;
 
 	std::string language = this->treeSystem->generateString(recursions);
-	printf("language:%s\n", language.c_str());
+	//printf("language:%s\n", language.c_str());
 	generateVertices(language);
 
-	printf("verticesSize:%d\n", vertices.size());
+	//printf("verticesSize:%d\n", vertices.size());
 	for (int i = 0; i <vertices.size(); i++)// : vertices)
 	{
 		indices.push_back(i);
@@ -27,7 +28,7 @@ Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &texBuffer);
-	glGenBuffers(1, &normalBuffer);
+	glGenBuffers(1, &colorBuffer);
 	glGenBuffers(1, &EBO);
 
 	// Bind the Vertex Array Object (VAO) first, then bind the associated buffers to it.
@@ -61,8 +62,8 @@ Tree::Tree(GLuint shader, LSystem * treeSystem, glm::vec3 startPos)
 		(GLvoid*)0                          // array buffer offset
 	);
 
-	glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
-	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), normals.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(
 		2,                                // attribute
@@ -88,7 +89,7 @@ Tree::~Tree()
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
-	glDeleteBuffers(1, &normalBuffer);
+	glDeleteBuffers(1, &colorBuffer);
 }
 
 void Tree::draw(GLuint shaderProgram, glm::mat4 C) {
@@ -118,7 +119,7 @@ void Tree::draw(GLuint shaderProgram, glm::mat4 C) {
 	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 	glBindVertexArray(VAO);
 
-	glLineWidth(10);
+	glLineWidth(3);
 	// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
 	glDrawElements(GL_LINES, indices.size(), GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
@@ -133,6 +134,7 @@ void Tree::update()
 
 void Tree::rotateDir(GLfloat angle, glm::vec3 axis)
 {
+	angle = angle * (rand() / (RAND_MAX + 1.) / 5 + 0.9);
 	currentDir = glm::vec3(glm::rotate(glm::mat4(1.0f), angle / 180.0f * glm::pi<float>(), axis) * glm::vec4(currentDir, 0.0f)) ;
 	
 	currentDir = glm::normalize(currentDir); // normalizes the direction vector after rotation
@@ -150,7 +152,7 @@ void Tree::randomize(int range) {
 
 void Tree::generateVertices(std::string language)
 {
-	printf("Generatedvertices: %s\n", language.c_str());
+	//printf("Generatedvertices: %s\n", language.c_str());
 	std::vector<char> variables = this->treeSystem->getVariables();
 	std::vector<GLfloat> params = this->treeSystem->getParams();
 	std::unordered_map<char, GLfloat> variableMap;
@@ -170,18 +172,37 @@ void Tree::generateVertices(std::string language)
 	//    + = rotate right (y axis)
 	//    < = rotate left (x axis)
 	//    > = rotate right (x axis)
+	//    ^ = rotate left (z axis)
+	//    & = rogate right (z axis)
 	// randomize the angle from 0.9 to 1.1: ex so 45 deg turn might become 40deg or 50 deg, but still
 	// in the same general direction
-	printf("chars:");
+	//printf("chars:");
+	GLint branchLevel = 0;
 	for (auto c : language)
 	{
-		printf("%c ", c);
-		
-		if (isalpha(c) || isdigit(c))
+		//printf("%c ", c);
+
+		if ( (isalpha(c) && isupper(c)) || isdigit(c))
 		{
 			vertices.push_back(currentPos);
+			
 			currentPos += currentDir * variableMap.at(c); // scales direction by the param value
 			vertices.push_back(currentPos);
+
+			//if (branchLevel >= recursions-1)
+			if (c == '0' || c == '3')
+			{
+				GLfloat greenColor = (rand() % 156 + 100) / 255.;
+				colors.push_back(glm::vec3(75.0f*(treeType%2)/255.,greenColor,20.0f*treeType/255.));
+				colors.push_back(glm::vec3(75.0f*(treeType%2)/255.,greenColor,20.0f*treeType/255.));
+			}
+			else
+			{
+				colors.push_back(glm::vec3(0.376f, 0.219f, 0.086f));
+				colors.push_back(glm::vec3(0.376f, 0.219f, 0.086f));
+
+			}
+
 		}
 		else
 		{
@@ -191,7 +212,8 @@ void Tree::generateVertices(std::string language)
 				{
 				case '[':
 					positionStack.push_back(std::pair < glm::vec3, glm::vec3 >(currentPos, currentDir));
-					rotateDir(-variableMap.at(c),glm::vec3(0.0f, 0.0f, 1.0f));
+					rotateDir(-variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+					branchLevel++;
 					break;
 				case ']':
 					temp = positionStack.back();
@@ -199,20 +221,48 @@ void Tree::generateVertices(std::string language)
 					currentPos = temp.first; // retrieves saved pos and direction from stack
 					currentDir = temp.second;
 					rotateDir(variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+					branchLevel--;
 					break;
-				case '-':
-					rotateDir(-variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
-					break;
-				case '+':
-					rotateDir(variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
-					break;
-				case '<':
-					rotateDir(-variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
-					break;
-				case '>':
-					rotateDir(variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
-					break;
-
+				/*case 'r':
+					printf("r");
+					int num = rand() % 6;
+					printf("%d", num);
+					switch (num)
+					{
+						*/
+					case '-': 
+					//case 0: 
+						//printf("-");
+						rotateDir(-variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
+						break;
+					case '+': 
+					//case 1:
+						//printf("+");
+						rotateDir(variableMap.at(c), glm::vec3(0.0f, 1.0f, 0.0f));
+						//printf("%f", variableMap.at(c));
+						break;
+					case '<': 
+					//case 2:
+						//printf("<");
+						rotateDir(-variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
+						break;
+					case '>': 
+					//case 3:
+						//printf(">");
+						rotateDir(variableMap.at(c), glm::vec3(1.0f, 0.0f, 0.0f));
+						break;
+					case '^':
+					//case 4:
+						//printf("^");
+						rotateDir(-variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+						break;
+					case '&': 
+					//case 5:
+						//printf("&");
+						rotateDir(variableMap.at(c), glm::vec3(0.0f, 0.0f, 1.0f));
+						break;
+					/*}
+					break;*/
 				}
 			}
 			catch (const std::exception&)
@@ -221,7 +271,7 @@ void Tree::generateVertices(std::string language)
 			}
 		}
 	}
-	printf("\nverticessizein genverts:%d", vertices.size());
+	//printf("\nverticessizein genverts:%d", vertices.size());
 }
 
 void Tree::updateMinMaxCoordinates(float x, float y, float z) {
