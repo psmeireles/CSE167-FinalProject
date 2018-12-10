@@ -6,12 +6,15 @@ Cube *cube;
 Curve *curves[8], *nbCurves[8];
 Terrain *terrain;
 Transform *world, *boundingSpheres, *anchorTranslations[8], *controlTranslations[16],
-*sphereTranslation, *sphereScale, *boundTranslation, *boundScale;
-BoundingSphere *boundingSphere;
+*sphere1Translation, *sphere2Translation, *sphere1Scale, *sphere2Scale,
+*bound1Scale, *bound2Scale;
+BoundingSphere *boundingSphere1, *boundingSphere2;
 GLint Window::objShader, Window::cubeShader, colorShader, terrainShader, treeShader;
 
+std::vector<BoundingSphere*> boundVols;
+
 // Default camera parameters
-glm::vec3 Window::camPos(0.0f, 0.0f, 200.0f);		// e  | Position of camera
+glm::vec3 Window::camPos(0.0f, 0.0f, 10.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -30,10 +33,7 @@ bool firstMouse = true;
 bool Window::movement = false;
 bool toggleModel = true;
 int Window::normalColor = 0;
-int eyeDir = 0;
-int clapCount = 0;
-int signal = 1;
-int clapSignal = 1;
+int spheresMover = 0;
 bool first = true;
 bool debugMode = false;
 
@@ -55,7 +55,9 @@ std::string result = system1->generateString(3);
 
 
 Tree * tree1;
-glm::vec3 startPos(0.0f, 0.0f, 180.0f);
+glm::vec3 startPos(0.0f, 0.0f, 0.0f);
+
+void detectColision();
 
 void Window::initialize_objects()
 {
@@ -75,20 +77,34 @@ void Window::initialize_objects()
 	printf(result2.c_str());
 	printf("\n\n");
 
-	sphere = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
-	boundingSphere = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1,1,1));
-	/*redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
-	greenPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 1.0f, 0.0f));
-	*/
+	sphere = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 0.0f, 1.0f));
+	boundingSphere1 = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1,1,1));
+	boundingSphere2 = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1, 1, 1));
+	boundVols.push_back(boundingSphere1);
+	boundVols.push_back(boundingSphere2);
+	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
+	//greenPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 1.0f, 0.0f));
+	
 	world = new Transform(glm::mat4(1.0f));
 	
-	sphereTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0, 10, 180)));
-	sphereScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 5.0f)));
-	boundScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
-	sphereScale->addChild(sphere);
-	boundScale->addChild(boundingSphere);
-	sphereTranslation->addChild(sphereScale);
-	sphereTranslation->addChild(boundScale);
+	sphere1Translation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(50, 10, 0)));
+	sphere2Translation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(-50, 10, 0)));
+	sphere1Scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 5.0f)));
+	sphere2Scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 5.0f, 5.0f)));
+	bound1Scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+	bound2Scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+	boundingSphere1->radius *= 10;
+	boundingSphere2->radius *= 10;
+	boundingSphere1->center = glm::translate(glm::mat4(1.0f), glm::vec3(50, 10, 0))*glm::vec4(boundingSphere1->center, 1.0f);
+	boundingSphere2->center = glm::translate(glm::mat4(1.0f), glm::vec3(-50, 10, 0))*glm::vec4(boundingSphere2->center, 1.0f);
+	sphere1Scale->addChild(sphere);
+	sphere2Scale->addChild(redPoint);
+	bound1Scale->addChild(boundingSphere1);
+	bound2Scale->addChild(boundingSphere2);
+	sphere1Translation->addChild(sphere1Scale);
+	sphere2Translation->addChild(sphere2Scale);
+	sphere1Translation->addChild(bound1Scale);
+	sphere2Translation->addChild(bound2Scale);
 	cube = new Cube();
 
 	terrain = new Terrain(terrainLength, terrainShader, "../textures/grass.ppm");
@@ -97,7 +113,8 @@ void Window::initialize_objects()
 	tree1 = new Tree(treeShader, system1, startPos);
 
 	world->addChild(cube);
-	world->addChild(sphereTranslation);
+	world->addChild(sphere1Translation);
+	world->addChild(sphere2Translation);
 	world->addChild(terrain);
 	world->radius = 9999999;
 
@@ -219,53 +236,23 @@ void Window::resize_callback(GLFWwindow* window, int width, int height)
 
 void Window::idle_callback()
 {
-	
-	//float velocity = 0.0f;
-	//if (sphereIsRiding) {
-	//	velocity = curvesLength / (8*3);
-	//}
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
-	//distance += velocity * deltaT;
-	////printf("%f\n", distance);
-	//int nextPointIndex;
-	//glm::vec3 newSpherePos;
-	//if (sphereIsRiding) {
-	//	nextPointIndex = curves[sphereCurve]->getNextPointIndex(spherePoint, &distance);
-	//	while (nextPointIndex == -1) {
-	//		sphereCurve = (sphereCurve + 1) % 8;
-	//		spherePoint = 0;
-	//		nextPointIndex = curves[sphereCurve]->getNextPointIndex(spherePoint, &distance);
-	//	}
-	//}
-	//else {
-	//	nextPointIndex = spherePoint;
-	//}
-
-	//glm::vec3 pointBefore = curves[sphereCurve]->getPoint(nextPointIndex);
-	//glm::vec3 pointAfter;
-	//if (nextPointIndex == 150) {
-	//	pointAfter = curves[sphereCurve+1]->getPoint(1);
-	//}
-	//else {
-	//	pointAfter = curves[sphereCurve]->getPoint(nextPointIndex + 1);
-	//}
-	//float adjacentPointsD = glm::abs(glm::distance(pointAfter, pointBefore));
-	//newSpherePos = (pointBefore*(adjacentPointsD - distance) + pointAfter * distance) / adjacentPointsD;
-
-	////newSpherePos = curves[sphereCurve]->getPoint(nextPointIndex);
-	//spherePoint = nextPointIndex;
-	//sphereTranslation->M = glm::translate(sphereTranslation->M, -lastSpherePos);
-	//sphereTranslation->M = glm::translate(sphereTranslation->M, newSpherePos);
-	//lastSpherePos = newSpherePos;
-	//
-
-	///*glm::vec3 newSpherePos = curves[sphereMovCounter / 151]->getPoint(sphereMovCounter % 151);
-	//sphereTranslation->M = glm::translate(sphereTranslation->M, -lastSpherePos);
-	//sphereTranslation->M = glm::translate(sphereTranslation->M, newSpherePos);
-	//lastSpherePos = newSpherePos;
-	//sphereMovCounter = (sphereMovCounter + 1)%(8*151);*/
+	int modifier = 1;
+	glm::mat4 translate1 = glm::translate(glm::mat4(1.0f), glm::vec3(-modifier * 0.1, 0.0f, 0.0f));
+	glm::mat4 translate2 = glm::translate(glm::mat4(1.0f), glm::vec3(modifier * 0.1, 0.0f, 0.0f));
+	sphere1Translation->M = translate1 * sphere1Translation->M;
+	sphere2Translation->M = translate2 * sphere2Translation->M;
+	boundingSphere1->center = translate1 * glm::vec4(boundingSphere1->center, 1.0f);
+	boundingSphere2->center = translate2 * glm::vec4(boundingSphere2->center, 1.0f);
+	spheresMover++;
+	if (spheresMover == 200) {
+		spheresMover = -spheresMover;
+		modifier = -modifier;
+	}
+	
+	detectColision();
 }
 
 void Window::display_callback(GLFWwindow* window)
@@ -457,4 +444,23 @@ void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
 	}
 	cam_look_at = Window::camPos + camDir;
 	Window::V = glm::lookAt(Window::camPos, cam_look_at, cam_up);
+}
+
+void detectColision() {
+	for (int i = 0; i < boundVols.size(); i++) {
+		BoundingSphere* obj1 = boundVols[i];
+		for (int j = i + 1; j < boundVols.size(); j++) {
+			BoundingSphere* obj2 = boundVols[j];
+			if (obj1 != obj2) {
+				if (glm::distance(obj1->center, obj2->center) < obj1->radius + obj2->radius) {
+					obj1->color = glm::vec3(1, 0, 0);
+					obj2->color = glm::vec3(1, 0, 0);
+				}
+				else {
+					obj1->color = glm::vec3(1, 1, 1);
+					obj2->color = glm::vec3(1, 1, 1);
+				}
+			}
+		}
+	}
 }

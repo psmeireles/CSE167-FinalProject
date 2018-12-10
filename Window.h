@@ -60,5 +60,4 @@ public:
 
 	static void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed);
 };
-
 #endif
