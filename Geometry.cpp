@@ -151,7 +151,7 @@ void Geometry::parse(const char *filepath)
 
 	FILE *fp = fopen(filepath, "rb");
 	if (fp == NULL) {
-		printf("error loading file\n");
+		printf("geometry:error loading file\n");
 		system("pause");
 		exit(-1);
 	}

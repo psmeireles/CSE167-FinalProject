@@ -12,7 +12,7 @@ Transform::Transform(glm::mat4 transform)
 	max_y = std::numeric_limits<float>::lowest();
 	max_z = std::numeric_limits<float>::lowest();
 
-	parseSphere();
+	//parseSphere();
 	objIsSelected = true;
 	lastState = 0;
 
@@ -151,7 +151,7 @@ void Transform::parseSphere()
 
 	FILE *fp = fopen("../obj/sphere.obj", "rb");
 	if (fp == NULL) {
-		printf("error loading file\n");
+		printf("transform:error loading file\n");
 		system("pause");
 		exit(-1);
 	}

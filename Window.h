@@ -16,6 +16,8 @@
 #include "Curve.h"
 #include "Terrain.h"
 #include "shader.h"
+#include "LSystem.h"
+#include "Tree.h"
 #include <glm/gtc/quaternion.hpp>
 #include <vector>
 #include <cstdlib>
