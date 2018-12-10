@@ -21,6 +21,7 @@
 #include "BoundingSphere.h"
 #include <vector>
 #include <cstdlib>
+#include <set>
 
 class Window
 {

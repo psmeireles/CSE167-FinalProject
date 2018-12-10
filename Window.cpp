@@ -15,6 +15,9 @@ glm::vec3 Window::camPos(0.0f, 0.0f, 10.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
+Transform *cameraScale, *cameraTranslate;
+BoundingSphere *cameraBound;
+
 int Window::width;
 int Window::height;
 float Window::yaw = 0, Window::pitch = 0;
@@ -74,6 +77,8 @@ Transform * treeScale2;
 Transform * treeScale3;
 
 void detectColision();
+// I'll keep a list to know which objects are colliding with the player so that I can change colors when they stop colliding
+std::set<BoundingSphere*> collidingObjs;
 
 void Window::initialize_objects()
 {
@@ -147,6 +152,15 @@ void Window::initialize_objects()
 
 	// Set initial eye view at terrain level
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
+	cameraBound = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1.0f));
+	cameraScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(5.0f)));
+	cameraTranslate = new Transform(glm::translate(glm::mat4(1.0f), camPos));
+	cameraBound->radius *= 5.0f;
+	cameraBound->center = camPos;
+	cameraScale->addChild(cameraBound);
+	cameraTranslate->addChild(cameraScale);
+	world->addChild(cameraTranslate);
+	boundVols.push_back(cameraBound);
 	moveCamera(camDir, camDir, 0);
 }
 
@@ -418,6 +432,7 @@ void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
 	int xIndex, zIndex;
 	int heightOffset = 10;
 	float lastY = Window::camPos.y;
+	glm::vec3 lastPos = Window::camPos;
 
 	movementDir.y = 0;
 	movementDir = glm::normalize(movementDir);
@@ -433,6 +448,11 @@ void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
 	}
 	cam_look_at = Window::camPos + camDir;
 	Window::V = glm::lookAt(Window::camPos, cam_look_at, cam_up);
+
+	// Updating bounding sphere
+	glm::mat4 translation = glm::translate(glm::mat4(1.0f), Window::camPos - lastPos);
+	cameraTranslate->M = translation * cameraTranslate->M;
+	cameraBound->center = translation * glm::vec4(cameraBound->center, 1.0f);
 	printf("%f, %f, %f\n", camPos.x, camPos.y, camPos.z);
 }
 
@@ -447,6 +467,21 @@ void detectColision() {
 					numCol++;
 					boundVols[i]->color = glm::vec3(1, 0, 0);
 					boundVols[j]->color = glm::vec3(1, 0, 0);
+
+					// check if camera is involved in collision and add object
+					if (j == boundVols.size() - 1) {
+						// check if object has already been added to colliding list
+						if (std::find(collidingObjs.begin(), collidingObjs.end(), boundVols[i]) == collidingObjs.end()) {
+							collidingObjs.insert(boundVols[i]);
+						}
+					}
+				}
+				else if (j == boundVols.size() - 1) {
+					std::set<BoundingSphere*>::iterator it = std::find(collidingObjs.begin(), collidingObjs.end(), boundVols[i]);
+					if (it != collidingObjs.end()) {
+						collidingObjs.erase(it);
+						boundVols[i]->color = glm::vec3(1.0f);
+					}
 				}
 			}
 		}
@@ -454,5 +489,8 @@ void detectColision() {
 	if (first) {
 		printf("%d\n", numCol);
 		first = false;
+	}
+	if (collidingObjs.size() == 0) {
+		cameraBound->color = glm::vec3(1.0f);
 	}
 }
