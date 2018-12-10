@@ -8,16 +8,24 @@ Geometry *tree;
 Transform * treeTranslation;
 Transform * treeScale;
 
+//Testing water
+Water * water;
+
 Cube *cube;
 Curve *curves[8], *nbCurves[8];
 Terrain *terrain;
 Transform *world, *anchorTranslations[8], *controlTranslations[16], *sphereTranslation, *sphereScale;
 Transform *armyT[1000];
 GLint Window::objShader, Window::cubeShader, colorShader, terrainShader;
+
+// Testing water
+GLint waterShader;
+
 glm::vec3 lastSpherePos;
 
 // Default camera parameters
-glm::vec3 Window::camPos(0.0f, 0.0f, 200.0f);		// e  | Position of camera
+//glm::vec3 Window::camPos(0.0f, 0.0f, 200.0f);		// e  | Position of camera
+glm::vec3 Window::camPos(0.0f, 0.0f, 20.0f);
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -64,6 +72,10 @@ void Window::initialize_objects()
 	colorShader = LoadShaders("../colorShader.vert", "../colorShader.frag");
 	terrainShader = LoadShaders("../terrainShader.vert", "../terrainShader.frag");
 
+    //Testing water
+    waterShader = LoadShaders("water.vert", "water.frag");
+    
+    
 	sphere = new Geometry("../obj/sphere.obj", objShader, glm::vec3());
 	redPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 0.0f, 0.0f));
 	greenPoint = new Geometry("../obj/sphere.obj", colorShader, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -72,6 +84,8 @@ void Window::initialize_objects()
     //Testing tree
     tree = new Geometry("../obj/lowtree.obj", colorShader, glm::vec3(0.0,1.0f, 0.0f));
     
+    //Testing water
+    water = new Water(0,0);
     
 	world = new Transform(glm::mat4(1.0f));
 	
@@ -128,11 +142,11 @@ void Window::initialize_objects()
     //world->addChild(terrain);
 	
     //Testing tree
-    treeTranslation = new Transform(glm::translate(glm::mat4(1.0f), points[0][0]));
-    treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
-    treeScale->addChild(tree);
-    treeTranslation->addChild(treeScale);
-    world->addChild(treeTranslation);
+    //treeTranslation = new Transform(glm::translate(glm::mat4(1.0f), points[0][0]));
+    //treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+    //treeScale->addChild(tree);
+    //treeTranslation->addChild(treeScale);
+    //world->addChild(treeTranslation);
     
     
     world->radius = 9999999;
@@ -145,6 +159,9 @@ void Window::clean_up()
 	delete(cube);
 	glDeleteProgram(objShader);
 	glDeleteProgram(cubeShader);
+    
+    //testing water
+    glDeleteProgram(waterShader);
 }
 
 GLFWwindow* Window::create_window(int width, int height)
@@ -308,6 +325,16 @@ void Window::display_callback(GLFWwindow* window)
 
 	world->draw(objShader, Window::V);
 
+    
+    
+    
+    
+    //Testing water
+    glUseProgram(waterShader);
+    water->draw(waterShader);
+    
+    
+    
 	// Gets events, including input such as keyboard and mouse or window resizing
 	glfwPollEvents();
 	// Swap buffers

@@ -19,6 +19,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <vector>
 #include <cstdlib>
+#include  "Water.h"
 
 class Window
 {
