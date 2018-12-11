@@ -161,8 +161,9 @@ void Window::initialize_objects()
     //treeTranslation->addChild(treeScale);
     //world->addChild(treeTranslation);
     
+    // NOTE This doesn't work currently for some reason... can't get object to appear
     //Testing water
-    waterTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,50.0f,0.0f) ));
+    waterTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,-5.0f,-10.0f)));
     //waterScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
     //waterScale->addChild(water);
     //waterTranslation->addChild(waterScale);
@@ -344,7 +345,6 @@ void Window::display_callback(GLFWwindow* window)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	world->draw(objShader, Window::V);
-
     
     
     
