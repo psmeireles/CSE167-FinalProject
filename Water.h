@@ -2,6 +2,7 @@
 #ifndef Water_h
 #define Water_h
 
+#include "Node.h"
 #include "Window.h"
 
 //A struct to hold a control point of the surface.
@@ -11,7 +12,7 @@ struct Point {
     float z;
 };
 
-class Water
+class Water:public Node
 {
 private:
     //Water properties.
@@ -31,15 +32,25 @@ private:
     void setupWater();
     
 public:
-    Water(int x_d, int z_d);
-    Water(int x_d, int z_d, GLuint skyBox_texture);
+    Water(int x_d, int z_d, GLuint shader);
     ~Water();
+    
+    GLuint skyTexture;
+    void draw(GLuint);
+    
+    //To hold our shader
+    GLuint shader;
     
     //Determine the Water's position in the world.
     int x, z;
     
-    GLuint skyTexture;
-    void draw(GLuint);
+    //Node functions
+    void draw(GLuint shaderProgram, glm::mat4 C);
+    void update();
+    void shiftAndResizeSphere();
+    void updateMinMaxCoordinates(float x, float y, float z);
+    
+
 };
 
 #endif

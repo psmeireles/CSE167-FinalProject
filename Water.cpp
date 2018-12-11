@@ -35,8 +35,10 @@ Point Points[4][4] = {
     }
 };
 
-Water::Water(int x_d, int z_d)
+Water::Water(int x_d, int z_d, GLuint shader)
 {
+    this->shader = shader;
+    
     //Setup the Water.
     this->x = x_d * SIZE + (SIZE / 2);
     this->z = z_d * SIZE + (SIZE / 2);
@@ -50,21 +52,6 @@ Water::Water(int x_d, int z_d)
     this->setupWater();
 }
 
-Water::Water(int x_d, int z_d, GLuint skyBox_texture)
-{
-    //Setup the Water.
-    this->x = x_d * SIZE + (SIZE / 2);
-    this->z = z_d * SIZE + (SIZE / 2);
-    this->level_of_detail = 300;//Define how many vertices (width/depth).
-    this->skyTexture = skyBox_texture;
-    //Setup toWorld so that the terrain is at the center of the world.
-    this->toWorld = glm::mat4(1.0f);
-    glm::mat4 translate = glm::translate(glm::mat4(1.0f), glm::vec3(this->x, 0, this->z));
-    this->toWorld = translate*this->toWorld;
-    //Setup the water surface.
-    this->setupGeometry();
-    this->setupWater();
-}
 
 /* Deconstructor to safely delete when finished. */
 Water::~Water()
@@ -246,4 +233,50 @@ void Water::draw(GLuint shaderProgram)
     glBindVertexArray(0);
     //Set it back to fill.
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void Water::draw(GLuint shaderProgram, glm::mat4 C) {
+    
+    glUseProgram(shader);
+    
+    // Calculate the combination of the model and view (camera inverse) matrices
+    //glm::mat4 model = glm::inverse(Window::V)*C*toWorld;
+    //glm::mat4 view = Window::V;
+    
+    //Get the current time.
+    float time = (float)glfwGetTime();
+    
+    //Calculate combination of the model (toWorld), view (camera inverse), and perspective matrices.
+    glm::mat4 MVP = Window::P * C * toWorld;
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "MVP"), 1, GL_FALSE, &MVP[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, &toWorld[0][0]);
+    glUniform3f(glGetUniformLocation(shaderProgram, "viewPos"), Window::camPos.x, Window::camPos.y, Window::camPos.z);
+    glUniform1f(glGetUniformLocation(shaderProgram, "time"), time);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    // Now draw the OBJObject. We simply need to bind the VAO associated with it.
+    glBindVertexArray(VAO);
+    // Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    //glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
+    // Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
+    glBindVertexArray(0);
+    
+    //Set it back to fill.
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    
+}
+
+void Water::update(){
+    
+}
+
+
+
+void Water::shiftAndResizeSphere(){
+    
+}
+
+void Water::updateMinMaxCoordinates(float x, float y, float z){
+    
 }

@@ -10,6 +10,8 @@ Transform * treeScale;
 
 //Testing water
 Water * water;
+Transform * waterTranslation;
+Transform * waterScale;
 
 Cube *cube;
 Curve *curves[8], *nbCurves[8];
@@ -24,8 +26,8 @@ GLint waterShader;
 glm::vec3 lastSpherePos;
 
 // Default camera parameters
-//glm::vec3 Window::camPos(0.0f, 0.0f, 200.0f);		// e  | Position of camera
-glm::vec3 Window::camPos(0.0f, 0.0f, 20.0f);
+glm::vec3 Window::camPos(0.0f, 0.0f, 200.0f);		// e  | Position of camera
+//glm::vec3 Window::camPos(0.0f, 0.0f, 20.0f);
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -64,8 +66,19 @@ bool sphereIsRiding = true;
 float lastTime = 0.0f;
 float distance = 0.0f;
 
+// Sound engine object
+ISoundEngine* engine;
+
 void Window::initialize_objects()
 {
+    
+    //Play Greensleeves on loop
+    engine = createIrrKlangDevice();
+    engine->play2D("SoundEffects/Greensleeves.wav", true);
+    
+    char * dir = getcwd(NULL, 0); // Platform-dependent, see reference link below
+    printf("Current dir: %s", dir);
+    
 	// Load the shader program. Make sure you have the correct filepath up top
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
 	cubeShader = LoadShaders("../cubeShader.vert", "../cubeShader.frag");
@@ -85,7 +98,7 @@ void Window::initialize_objects()
     tree = new Geometry("../obj/lowtree.obj", colorShader, glm::vec3(0.0,1.0f, 0.0f));
     
     //Testing water
-    water = new Water(0,0);
+    water = new Water(0,0, waterShader);
     
 	world = new Transform(glm::mat4(1.0f));
 	
@@ -148,6 +161,13 @@ void Window::initialize_objects()
     //treeTranslation->addChild(treeScale);
     //world->addChild(treeTranslation);
     
+    //Testing water
+    waterTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,50.0f,0.0f) ));
+    //waterScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+    //waterScale->addChild(water);
+    //waterTranslation->addChild(waterScale);
+    waterTranslation->addChild(water);
+    world->addChild(waterTranslation);
     
     world->radius = 9999999;
 }
