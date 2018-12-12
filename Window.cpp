@@ -12,6 +12,20 @@ std::vector<BoundingSphere*> boundVols;
 
 // Default camera parameters
 glm::vec3 Window::camPos(0.0f, 0.0f, 10.0f);		// e  | Position of camera
+
+//Testing tree
+Geometry *tree;
+Transform * treeTranslation;
+Transform * treeScale;
+
+//Testing water
+Water * water;
+Transform * waterTranslation;
+Transform * waterScale;
+
+// Testing water
+GLint waterShader;
+
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -80,8 +94,19 @@ void detectColision();
 // I'll keep a list to know which objects are colliding with the player so that I can change colors when they stop colliding
 std::set<BoundingSphere*> collidingObjs;
 
+// Sound engine object
+ISoundEngine* engine;
+
 void Window::initialize_objects()
-{	
+{
+    
+    //Play Greensleeves on loop
+    engine = createIrrKlangDevice();
+    engine->play2D("SoundEffects/Greensleeves.wav", true);
+    
+    char * dir = getcwd(NULL, 0); // Platform-dependent, see reference link below
+    printf("Current dir: %s", dir);
+    
 	// Load the shader program. Make sure you have the correct filepath up top
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
 	cubeShader = LoadShaders("../cubeShader.vert", "../cubeShader.frag");
@@ -89,6 +114,15 @@ void Window::initialize_objects()
 	terrainShader = LoadShaders("../terrainShader.vert", "../terrainShader.frag");
 	treeShader = LoadShaders("../treeShader.vert", "../treeShader.frag");
 	
+    //Testing water
+    waterShader = LoadShaders("water.vert", "water.frag");
+    
+    //Testing tree
+    //tree = new Geometry("../obj/lowtree.obj", colorShader, glm::vec3(0.0,1.0f, 0.0f));
+    
+    //Testing water
+    water = new Water(0,0, waterShader);
+    
 	world = new Transform(glm::mat4(1.0f));
 	
 	cube = new Cube();
@@ -161,6 +195,22 @@ void Window::initialize_objects()
 	world->addChild(cameraTranslate);
 	boundVols.push_back(cameraBound);
 	moveCamera(camDir, camDir, 0);
+    
+    //Testing tree
+    //treeTranslation = new Transform(glm::translate(glm::mat4(1.0f), points[0][0]));
+    //treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+    //treeScale->addChild(tree);
+    //treeTranslation->addChild(treeScale);
+    //world->addChild(treeTranslation);
+    
+    // NOTE This doesn't work currently for some reason... can't get object to appear
+    //Testing water
+    waterTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,-5.0f,-10.0f)));
+    //waterScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
+    //waterScale->addChild(water);
+    //waterTranslation->addChild(waterScale);
+    waterTranslation->addChild(water);
+    world->addChild(waterTranslation);
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.
@@ -169,6 +219,9 @@ void Window::clean_up()
 	delete(cube);
 	glDeleteProgram(objShader);
 	glDeleteProgram(cubeShader);
+    
+    //testing water
+    glDeleteProgram(waterShader);
 }
 
 GLFWwindow* Window::create_window(int width, int height)
@@ -288,7 +341,16 @@ void Window::display_callback(GLFWwindow* window)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	world->draw(objShader, Window::V);
-
+    
+    
+    
+    
+    //Testing water
+    glUseProgram(waterShader);
+    water->draw(waterShader);
+    
+    
+    
 	// Gets events, including input such as keyboard and mouse or window resizing
 	glfwPollEvents();
 	// Swap buffers

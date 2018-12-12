@@ -22,6 +22,16 @@
 #include <vector>
 #include <cstdlib>
 #include <set>
+#include  "Water.h"
+
+#include <unistd.h>
+
+// Sound library header
+#include <irrKlang.h>
+
+using namespace irrklang;
+
+#pragma comment (lib, "irrKlang.lib") // link with irrKlang.dll
 
 class Window
 {

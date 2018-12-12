@@ -274,7 +274,7 @@ unsigned int loadCubemap2(vector<std::string> faces)
 		}
 		else
 		{
-			printf("Cubemap texture failed to load at path: %s\n", faces[i]);
+			//printf("Cubemap texture failed to load at path: %s\n", faces[i]);
 			stbi_image_free(data);
 		}
 	}
