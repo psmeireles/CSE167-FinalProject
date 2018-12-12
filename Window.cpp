@@ -17,6 +17,7 @@ glm::vec3 Window::camPos(0.0f, 0.0f, 10.0f);		// e  | Position of camera
 Water * water;
 Transform * waterTranslation;
 Transform * waterScale;
+Transform * waterRotation;
 
 // Testing water
 GLint waterShader;
@@ -91,13 +92,16 @@ std::set<BoundingSphere*> collidingObjs;
 
 // Sound engine object
 ISoundEngine* engine;
+ISoundSource *movementSound, *greensleeves;
 
 void Window::initialize_objects()
 {
     
     //Play Greensleeves on loop
     engine = createIrrKlangDevice();
-    engine->play2D("../SoundEffects/Greensleeves.wav", true);
+	movementSound = engine->addSoundSourceFromFile("../SoundEffects/Walking.wav");
+	greensleeves = engine->addSoundSourceFromFile("../SoundEffects/Greensleeves.wav");
+    engine->play2D(greensleeves, true);
     
     //char * dir = getcwd(NULL, 0); // Platform-dependent, see reference link below
     //printf("Current dir: %s", dir);
@@ -194,9 +198,9 @@ void Window::initialize_objects()
     //waterScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
     //waterScale->addChild(water);
     //waterTranslation->addChild(waterScale);
-	Transform *waterRotation = new Transform(glm::rotate(glm::mat4(1.0f), 180.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
-	waterRotation->addChild(water);
-    waterTranslation->addChild(waterRotation);
+	//waterRotation = new Transform(glm::rotate(glm::mat4(1.0f), 180.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
+	//waterRotation->addChild(water);
+    waterTranslation->addChild(water);
     world->addChild(waterTranslation);
 }
 
@@ -346,15 +350,14 @@ void Window::display_callback(GLFWwindow* window)
 void Window::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	// Check for a key press
-	
-	int modifier = mods == GLFW_MOD_SHIFT ? -1 : 1;	
+
+	int modifier = mods == GLFW_MOD_SHIFT ? -1 : 1;
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
-	float cameraSpeed = 3*100.0f*deltaT;
+	float cameraSpeed = 25.0f*deltaT;
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
-	
-	if (action = GLFW_PRESS) {
+	if (action == GLFW_PRESS || action == GLFW_REPEAT) {
 		switch (key) {
 			// Check if escape was pressed
 		case(GLFW_KEY_ESCAPE):
@@ -365,15 +368,23 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 			break;
 		case GLFW_KEY_W:
 			moveCamera(camDir, camDir, cameraSpeed);
+			if(!engine->isCurrentlyPlaying(movementSound))
+				engine->play2D(movementSound);
 			break;
 		case GLFW_KEY_A:
 			moveCamera(-glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
+			if (!engine->isCurrentlyPlaying(movementSound))
+				engine->play2D(movementSound);
 			break;
 		case GLFW_KEY_S:
 			moveCamera(-camDir, camDir, cameraSpeed);
+			if (!engine->isCurrentlyPlaying(movementSound))
+				engine->play2D(movementSound);
 			break;
 		case GLFW_KEY_D:
 			moveCamera(glm::normalize(glm::cross(camDir, cam_up)), camDir, cameraSpeed);
+			if (!engine->isCurrentlyPlaying(movementSound))
+				engine->play2D(movementSound);
 			break;
 		case GLFW_KEY_C:
 			BoundingSphere::debugMode = !BoundingSphere::debugMode;
@@ -399,6 +410,12 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 				t3->updateBuffers();
 			}
 			break;
+		}
+	}
+	else if (action == GLFW_RELEASE) {
+		if (key == GLFW_KEY_W || key == GLFW_KEY_A ||
+			key == GLFW_KEY_S || key == GLFW_KEY_D) {
+			engine->stopAllSoundsOfSoundSource(movementSound);
 		}
 	}
 }
@@ -521,7 +538,6 @@ void Window::moveCamera(glm::vec3 movementDir, glm::vec3 camDir, float speed) {
 	glm::mat4 translation = glm::translate(glm::mat4(1.0f), Window::camPos - lastPos);
 	cameraTranslate->M = translation * cameraTranslate->M;
 	cameraBound->center = translation * glm::vec4(cameraBound->center, 1.0f);
-	printf("%f, %f, %f\n", camPos.x, camPos.y, camPos.z);
 }
 
 void detectColision() {
