@@ -97,10 +97,10 @@ void Window::initialize_objects()
     
     //Play Greensleeves on loop
     engine = createIrrKlangDevice();
-    engine->play2D("SoundEffects/Greensleeves.wav", true);
+    engine->play2D("../SoundEffects/Greensleeves.wav", true);
     
-    char * dir = getcwd(NULL, 0); // Platform-dependent, see reference link below
-    printf("Current dir: %s", dir);
+    //char * dir = getcwd(NULL, 0); // Platform-dependent, see reference link below
+    //printf("Current dir: %s", dir);
     
 	// Load the shader program. Make sure you have the correct filepath up top
 	objShader = LoadShaders("../shader.vert", "../shader.frag");
@@ -110,7 +110,7 @@ void Window::initialize_objects()
 	treeShader = LoadShaders("../treeShader.vert", "../treeShader.frag");
 	
     //Testing water
-    waterShader = LoadShaders("water.vert", "water.frag");
+    waterShader = LoadShaders("../water.vert", "../water.frag");
     
     //Testing water
     water = new Water(0,0, waterShader);
@@ -194,7 +194,9 @@ void Window::initialize_objects()
     //waterScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
     //waterScale->addChild(water);
     //waterTranslation->addChild(waterScale);
-    waterTranslation->addChild(water);
+	Transform *waterRotation = new Transform(glm::rotate(glm::mat4(1.0f), 180.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
+	waterRotation->addChild(water);
+    waterTranslation->addChild(waterRotation);
     world->addChild(waterTranslation);
 }
 

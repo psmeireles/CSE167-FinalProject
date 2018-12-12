@@ -6,6 +6,7 @@
 #define GLFW_INCLUDE_GLEXT
 #ifdef __APPLE__
 #define GLFW_INCLUDE_GLCOREARB
+#include <unistd.h>
 #else
 #include <GL/glew.h>
 #endif
@@ -24,10 +25,9 @@
 #include <set>
 #include  "Water.h"
 
-#include <unistd.h>
 
 // Sound library header
-#include <irrKlang.h>
+#include "include/irrKlang.h"
 
 using namespace irrklang;
 
