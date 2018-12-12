@@ -101,7 +101,6 @@ void Window::initialize_objects()
     engine = createIrrKlangDevice();
 	movementSound = engine->addSoundSourceFromFile("../SoundEffects/Walking.wav");
 	greensleeves = engine->addSoundSourceFromFile("../SoundEffects/Greensleeves.wav");
-    engine->play2D(greensleeves, true);
     
     //char * dir = getcwd(NULL, 0); // Platform-dependent, see reference link below
     //printf("Current dir: %s", dir);
@@ -194,14 +193,16 @@ void Window::initialize_objects()
     
     // NOTE This doesn't work currently for some reason... can't get object to appear
     //Testing water
-    waterTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,-5.0f,-10.0f)));
+    waterTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, terrain->map[terrainLength / 2][terrainLength / 2] + 20,-10.0f)));
     //waterScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
     //waterScale->addChild(water);
     //waterTranslation->addChild(waterScale);
 	//waterRotation = new Transform(glm::rotate(glm::mat4(1.0f), 180.0f, glm::vec3(0.0f, 0.0f, 1.0f)));
 	//waterRotation->addChild(water);
     waterTranslation->addChild(water);
-    world->addChild(waterTranslation);
+    //world->addChild(waterTranslation);
+
+	engine->play2D(greensleeves, true);
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.
@@ -355,7 +356,7 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 	float now = glfwGetTime();
 	float deltaT = now - lastTime;
 	lastTime = now;
-	float cameraSpeed = 25.0f*deltaT;
+	float cameraSpeed = 40.0f*deltaT;
 	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
 	if (action == GLFW_PRESS || action == GLFW_REPEAT) {
 		switch (key) {
