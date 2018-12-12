@@ -13,11 +13,6 @@ std::vector<BoundingSphere*> boundVols;
 // Default camera parameters
 glm::vec3 Window::camPos(0.0f, 0.0f, 10.0f);		// e  | Position of camera
 
-//Testing tree
-Geometry *tree;
-Transform * treeTranslation;
-Transform * treeScale;
-
 //Testing water
 Water * water;
 Transform * waterTranslation;
@@ -117,9 +112,6 @@ void Window::initialize_objects()
     //Testing water
     waterShader = LoadShaders("water.vert", "water.frag");
     
-    //Testing tree
-    //tree = new Geometry("../obj/lowtree.obj", colorShader, glm::vec3(0.0,1.0f, 0.0f));
-    
     //Testing water
     water = new Water(0,0, waterShader);
     
@@ -196,13 +188,6 @@ void Window::initialize_objects()
 	boundVols.push_back(cameraBound);
 	moveCamera(camDir, camDir, 0);
     
-    //Testing tree
-    //treeTranslation = new Transform(glm::translate(glm::mat4(1.0f), points[0][0]));
-    //treeScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(10.0f)));
-    //treeScale->addChild(tree);
-    //treeTranslation->addChild(treeScale);
-    //world->addChild(treeTranslation);
-    
     // NOTE This doesn't work currently for some reason... can't get object to appear
     //Testing water
     waterTranslation = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,-5.0f,-10.0f)));
@@ -220,7 +205,6 @@ void Window::clean_up()
 	glDeleteProgram(objShader);
 	glDeleteProgram(cubeShader);
     
-    //testing water
     glDeleteProgram(waterShader);
 }
 
