@@ -92,7 +92,7 @@ std::set<BoundingSphere*> collidingObjs;
 
 // Sound engine object
 ISoundEngine* engine;
-ISoundSource *movementSound, *greensleeves;
+ISoundSource *movementSound, *greensleeves, *bumpSound;
 
 void Window::initialize_objects()
 {
@@ -101,7 +101,7 @@ void Window::initialize_objects()
     engine = createIrrKlangDevice();
 	movementSound = engine->addSoundSourceFromFile("../SoundEffects/Walking.wav");
 	greensleeves = engine->addSoundSourceFromFile("../SoundEffects/Greensleeves.wav");
-    
+	bumpSound = engine->addSoundSourceFromFile("../SoundEffects/Bump.wav");
     //char * dir = getcwd(NULL, 0); // Platform-dependent, see reference link below
     //printf("Current dir: %s", dir);
     
@@ -558,6 +558,7 @@ void detectColision() {
 						// check if object has already been added to colliding list
 						if (std::find(collidingObjs.begin(), collidingObjs.end(), boundVols[i]) == collidingObjs.end()) {
 							collidingObjs.insert(boundVols[i]);
+							engine->play2D(bumpSound);
 						}
 					}
 				}
