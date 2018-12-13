@@ -94,6 +94,10 @@ std::set<BoundingSphere*> collidingObjs;
 ISoundEngine* engine;
 ISoundSource *movementSound, *greensleeves, *bumpSound;
 
+// Hidden objects
+std::vector<Transform *> hiddenObjects;
+int maxObj = 6;
+
 void Window::initialize_objects()
 {
     
@@ -203,6 +207,35 @@ void Window::initialize_objects()
     //world->addChild(waterTranslation);
 
 	engine->play2D(greensleeves, true);
+	
+	// Initialize the hidden objects
+	for(int i = 0; i < maxObj; i++)
+	{
+		Geometry * g;
+		Transform * t_scale;
+		switch(i%3)
+		{
+			case 0: g = new Geometry("../bunny.obj", treeShader, glm::vec3(1.0f));
+					t_scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.75f)));
+				break;
+			case 1: g = new Geometry("../bunny.obj", treeShader, glm::vec3(1.0f));
+					t_scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f)));
+				break;
+			case 2: g = new Geometry("../bunny.obj", treeShader, glm::vec3(1.0f));
+					t_scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f)));
+				break;
+		}
+		t_scale->addChild(g);
+		
+		// Randomize object location (may overlap with trees b/c using same coordinate generation)
+		int xPos = rand() % terrainLength - terrainLength / 2;
+		int zPos = rand() % terrainLength - terrainLength / 2;
+		Transform * t_translate = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] + 18, zPos)));
+
+		t_translate->addChild(t_scale);
+		hiddenObjects->push_back(t_translate);
+		world->add(t_translate);
+	}
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.
