@@ -209,30 +209,38 @@ void Window::initialize_objects()
 	engine->play2D(greensleeves, true);
 	
 	// Initialize the hidden objects
+	Geometry * bunny, *dragon, *bear;
+	bunny = new Geometry("../bunny.obj", treeShader, glm::vec3(1.0f));
+	bear = new Geometry("../bear.obj", treeShader, glm::vec3(1.0f));
+	dragon = new Geometry("../dragon.obj", treeShader, glm::vec3(1.0f));
+	
+	Transform * scale_bunny, scale_bear, scale_dragon;
+	scale_bunny = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.75f)));
+	scale_bear = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f)));
+	scale_dragon = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f)));
+
+	scale_bunny->addChild(bunny);
+	scale_bear->addChild(bear);
+	scale_dragon->add(dragon);
 	for(int i = 0; i < maxObj; i++)
 	{
-		Geometry * g;
-		Transform * t_scale;
-		switch(i%3)
-		{
-			case 0: g = new Geometry("../bunny.obj", treeShader, glm::vec3(1.0f));
-					t_scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.75f)));
-				break;
-			case 1: g = new Geometry("../bunny.obj", treeShader, glm::vec3(1.0f));
-					t_scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f)));
-				break;
-			case 2: g = new Geometry("../bunny.obj", treeShader, glm::vec3(1.0f));
-					t_scale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f)));
-				break;
-		}
-		t_scale->addChild(g);
+		
 		
 		// Randomize object location (may overlap with trees b/c using same coordinate generation)
 		int xPos = rand() % terrainLength - terrainLength / 2;
 		int zPos = rand() % terrainLength - terrainLength / 2;
 		Transform * t_translate = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] + 18, zPos)));
 
-		t_translate->addChild(t_scale);
+		switch(i%3)
+		{
+			case 0: t_translate->addChild(scale_bunny);
+				break;
+			case 1: t_translate->addChild(scale_bear);
+				break;
+			case 2:t_translate->addChild(scale_dragon);
+				break;
+		}
+		
 		hiddenObjects.push_back(t_translate);
 		world->addChild(t_translate);
 	}
