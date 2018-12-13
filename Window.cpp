@@ -96,7 +96,7 @@ ISoundSource *movementSound, *greensleeves, *bumpSound;
 
 // Hidden objects
 std::vector<Transform *> hiddenObjects;
-int maxObj = 6;
+int maxObj = 516;
 
 void Window::initialize_objects()
 {
@@ -214,14 +214,14 @@ void Window::initialize_objects()
 	bear = new Geometry("../bear.obj", treeShader, glm::vec3(1.0f));
 	dragon = new Geometry("../dragon.obj", treeShader, glm::vec3(1.0f));
 	
-	Transform * scale_bunny, scale_bear, scale_dragon;
-	scale_bunny = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.75f)));
-	scale_bear = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f)));
-	scale_dragon = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(0.5f)));
+	Transform * scale_bunny,* scale_bear,* scale_dragon;
+	scale_bunny = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
+	scale_bear = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
+	scale_dragon = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
 
 	scale_bunny->addChild(bunny);
 	scale_bear->addChild(bear);
-	scale_dragon->add(dragon);
+	scale_dragon->addChild(dragon);
 	for(int i = 0; i < maxObj; i++)
 	{
 		
@@ -229,7 +229,7 @@ void Window::initialize_objects()
 		// Randomize object location (may overlap with trees b/c using same coordinate generation)
 		int xPos = rand() % terrainLength - terrainLength / 2;
 		int zPos = rand() % terrainLength - terrainLength / 2;
-		Transform * t_translate = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] + 18, zPos)));
+		Transform * t_translate = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2]+5, zPos)));
 
 		switch(i%3)
 		{
