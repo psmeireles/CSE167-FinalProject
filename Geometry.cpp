@@ -109,33 +109,32 @@ void Geometry::draw(GLuint shaderProgram, glm::mat4 C) {
 
 	glm::vec3 newCenter = view * model * glm::vec4(center, 1.0f);
 
-	if (!Window::culling || isVisible(newCenter, radius)) {
-		//render object
-		glUseProgram(shader);
+	//render object
+	glUseProgram(shader);
 
-		// We need to calcullate this because modern OpenGL does not keep track of any matrix other than the viewport (D)
-		// Consequently, we need to forward the projection, view, and model matrices to the shader programs
-		// Get the location of the uniform variables "projection" and "modelview"
-		GLuint uProjection = glGetUniformLocation(shader, "projection");
-		GLuint uColor = glGetUniformLocation(shader, "color");
-		GLuint uModel = glGetUniformLocation(shader, "model");
-		GLuint uView = glGetUniformLocation(shader, "view");
-		GLuint uCamPos = glGetUniformLocation(shader, "cameraPos");
-		// Now send these values to the shader program
-		glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
-		glUniformMatrix4fv(uModel, 1, GL_FALSE, &model[0][0]);
-		glUniformMatrix4fv(uView, 1, GL_FALSE, &view[0][0]);
-		glUniform3fv(uCamPos, 1, &Window::camPos[0]);
-		glUniform3fv(uColor, 1, &this->color[0]);
+	// We need to calcullate this because modern OpenGL does not keep track of any matrix other than the viewport (D)
+	// Consequently, we need to forward the projection, view, and model matrices to the shader programs
+	// Get the location of the uniform variables "projection" and "modelview"
+	GLuint uProjection = glGetUniformLocation(shader, "projection");
+	GLuint uColor = glGetUniformLocation(shader, "color");
+	GLuint uModel = glGetUniformLocation(shader, "model");
+	GLuint uView = glGetUniformLocation(shader, "view");
+	GLuint uCamPos = glGetUniformLocation(shader, "cameraPos");
+	// Now send these values to the shader program
+	glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
+	glUniformMatrix4fv(uModel, 1, GL_FALSE, &model[0][0]);
+	glUniformMatrix4fv(uView, 1, GL_FALSE, &view[0][0]);
+	glUniform3fv(uCamPos, 1, &Window::camPos[0]);
+	glUniform3fv(uColor, 1, &this->color[0]);
 
-		// Now draw the OBJObject. We simply need to bind the VAO associated with it.
-		glBindVertexArray(VAO);
-		// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-		//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
-		// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
-		glBindVertexArray(0);
-	}
+	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
+	glBindVertexArray(VAO);
+	// Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+	//glDrawArrays(GL_TRIANGLES, indices[0], indices.size());
+	// Unbind the VAO when we're done so we don't accidentally draw extra stuff or tamper with its bound buffers
+	glBindVertexArray(0);
+
 }
 
 void Geometry::update()

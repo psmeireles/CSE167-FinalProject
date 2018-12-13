@@ -97,7 +97,7 @@ ISoundSource *movementSound, *greensleeves, *bumpSound, *itemFoundSound;
 
 // Hidden objects
 std::vector<Transform *> hiddenObjects;
-int maxObj = 50;
+int maxObj = 10;
 
 void Window::initialize_objects()
 {
