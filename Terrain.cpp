@@ -128,12 +128,14 @@ void Terrain::draw(GLuint shaderProgram, glm::mat4 C) {
 	GLuint uModel = glGetUniformLocation(shader, "model");
 	GLuint uView = glGetUniformLocation(shader, "view");
 	GLuint uCamPos = glGetUniformLocation(shader, "cameraPos");
+	GLuint uNormalColor = glGetUniformLocation(shader, "normalColor");
 	// Now send these values to the shader program
 	glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
 	glUniformMatrix4fv(uModel, 1, GL_FALSE, &model[0][0]);
 	glUniformMatrix4fv(uView, 1, GL_FALSE, &view[0][0]);
 	glUniform3fv(uCamPos, 1, &Window::camPos[0]);
 	glUniform3fv(uColor, 1, &this->color[0]);
+	glUniform1i(uNormalColor, Window::normalColor);
 
 	// Now draw the OBJObject. We simply need to bind the VAO associated with it.
 	glBindVertexArray(VAO);

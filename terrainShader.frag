@@ -8,10 +8,13 @@ in vec2 texel;
 out vec4 FragColor;
 
 uniform vec3 color;
+uniform int normalColor;
 uniform sampler2D terrainTexture;
 
 void main()
 {    
-	//FragColor = vec4(Normal, 1.0);
-	FragColor = texture(terrainTexture, texel);
+	if(normalColor == 1)
+		FragColor = vec4(Normal, 1.0);
+	else
+		FragColor = texture(terrainTexture, texel);
 }
