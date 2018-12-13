@@ -92,11 +92,11 @@ std::set<BoundingSphere*> collidingObjs;
 
 // Sound engine object
 ISoundEngine* engine;
-ISoundSource *movementSound, *greensleeves, *bumpSound;
+ISoundSource *movementSound, *greensleeves, *bumpSound, *itemFoundSound;
 
 // Hidden objects
 std::vector<Transform *> hiddenObjects;
-int maxObj = 516;
+int maxObj = 50;
 
 void Window::initialize_objects()
 {
@@ -106,6 +106,8 @@ void Window::initialize_objects()
 	movementSound = engine->addSoundSourceFromFile("../SoundEffects/Walking.wav");
 	greensleeves = engine->addSoundSourceFromFile("../SoundEffects/Greensleeves.wav");
 	bumpSound = engine->addSoundSourceFromFile("../SoundEffects/Bump.wav");
+	itemFoundSound = engine->addSoundSourceFromFile("../SoundEffects/ItemFound.wav");
+	itemFoundSound->setDefaultVolume(0.35f);
     //char * dir = getcwd(NULL, 0); // Platform-dependent, see reference link below
     //printf("Current dir: %s", dir);
     
@@ -147,6 +149,7 @@ void Window::initialize_objects()
 	if (t3->radius > maxRadius) {
 		maxRadius = t3->radius;
 	}
+
 	for (int i = 0; i < maxTrees; i++)
 	{
 		int xPos = rand() % terrainLength - terrainLength / 2;
@@ -181,19 +184,6 @@ void Window::initialize_objects()
 	world->addChild(cube);
 	world->addChild(terrain);
 	world->radius = 9999999;
-
-	// Set initial eye view at terrain level
-	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
-	cameraBound = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1.0f));
-	cameraScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(5.0f)));
-	cameraTranslate = new Transform(glm::translate(glm::mat4(1.0f), camPos));
-	cameraBound->radius *= 5.0f;
-	cameraBound->center = camPos;
-	cameraScale->addChild(cameraBound);
-	cameraTranslate->addChild(cameraScale);
-	world->addChild(cameraTranslate);
-	boundVols.push_back(cameraBound);
-	moveCamera(camDir, camDir, 0);
     
     // NOTE This doesn't work currently for some reason... can't get object to appear
     //Testing water
@@ -210,18 +200,27 @@ void Window::initialize_objects()
 	
 	// Initialize the hidden objects
 	Geometry * bunny, *dragon, *bear;
-	bunny = new Geometry("../bunny.obj", treeShader, glm::vec3(1.0f));
-	bear = new Geometry("../bear.obj", treeShader, glm::vec3(1.0f));
-	dragon = new Geometry("../dragon.obj", treeShader, glm::vec3(1.0f));
+	bunny = new Geometry("../bunny.obj", objShader, glm::vec3(1.0f));
+	bear = new Geometry("../bear.obj", objShader, glm::vec3(1.0f));
+	dragon = new Geometry("../dragon.obj", objShader, glm::vec3(1.0f));
 	
+	maxRadius = bunny->radius;
+	if (bear->radius > maxRadius) {
+		maxRadius = bear->radius;
+	}
+	if (dragon->radius > maxRadius) {
+		maxRadius = dragon->radius;
+	}
+
 	Transform * scale_bunny,* scale_bear,* scale_dragon;
-	scale_bunny = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
-	scale_bear = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
-	scale_dragon = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
+	scale_bunny = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(5.0f)));
+	scale_bear = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(5.0f)));
+	scale_dragon = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(5.0f)));
 
 	scale_bunny->addChild(bunny);
 	scale_bear->addChild(bear);
 	scale_dragon->addChild(dragon);
+
 	for(int i = 0; i < maxObj; i++)
 	{
 		
@@ -229,21 +228,44 @@ void Window::initialize_objects()
 		// Randomize object location (may overlap with trees b/c using same coordinate generation)
 		int xPos = rand() % terrainLength - terrainLength / 2;
 		int zPos = rand() % terrainLength - terrainLength / 2;
-		Transform * t_translate = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2]+5, zPos)));
+		Transform * t_translate = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] + 2, zPos)));
+		BoundingSphere *sphere = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1.0f, 1.0f, 1.0f));
+		Transform *boundScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(maxRadius * 5)));
+		boundScale->addChild(sphere);
+		sphere->radius *= maxRadius * 5;
+		boundVols.push_back(sphere);
+		t_translate->addChild(boundScale);
+
 
 		switch(i%3)
 		{
 			case 0: t_translate->addChild(scale_bunny);
+				sphere->center = t_translate->M*glm::vec4(bunny->center, 1.0f);
 				break;
 			case 1: t_translate->addChild(scale_bear);
+				sphere->center = t_translate->M*glm::vec4(bear->center, 1.0f);
 				break;
 			case 2:t_translate->addChild(scale_dragon);
+				sphere->center = t_translate->M*glm::vec4(dragon->center, 1.0f);
 				break;
 		}
 		
 		hiddenObjects.push_back(t_translate);
 		world->addChild(t_translate);
 	}
+
+	// Set initial eye view at terrain level
+	glm::vec3 camDir = glm::normalize(cam_look_at - Window::camPos);
+	cameraBound = new BoundingSphere("../obj/sphere.obj", colorShader, glm::vec3(1.0f));
+	cameraScale = new Transform(glm::scale(glm::mat4(1.0f), glm::vec3(5.0f)));
+	cameraTranslate = new Transform(glm::translate(glm::mat4(1.0f), camPos));
+	cameraBound->radius *= 5.0f;
+	cameraBound->center = camPos;
+	cameraScale->addChild(cameraBound);
+	cameraTranslate->addChild(cameraScale);
+	world->addChild(cameraTranslate);
+	boundVols.push_back(cameraBound);
+	moveCamera(camDir, camDir, 0);
 }
 
 // Treat this as a destructor function. Delete dynamically allocated memory here.
@@ -596,8 +618,17 @@ void detectColision() {
 
 					// check if camera is involved in collision and add object
 					if (j == boundVols.size() - 1) {
+						if (i >= boundVols.size() - 1 - maxObj) {
+							//Collecting object
+							int objIndex = i - (boundVols.size() - 1 - maxObj);
+							glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1000.0f, 0.0f));
+							hiddenObjects[objIndex]->M = translation * hiddenObjects[objIndex]->M;
+							boundVols[i]->center = translation * glm::vec4(boundVols[i]->center, 1.0f);
+							if(!engine->isCurrentlyPlaying(itemFoundSound))
+								engine->play2D(itemFoundSound);
+						}
 						// check if object has already been added to colliding list
-						if (std::find(collidingObjs.begin(), collidingObjs.end(), boundVols[i]) == collidingObjs.end()) {
+						else if (std::find(collidingObjs.begin(), collidingObjs.end(), boundVols[i]) == collidingObjs.end()) {
 							collidingObjs.insert(boundVols[i]);
 							engine->play2D(bumpSound);
 						}

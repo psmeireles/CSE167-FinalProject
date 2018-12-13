@@ -207,7 +207,7 @@ void Geometry::shiftAndResizeModel()
 	GLfloat avg_x = (max_x + min_x) / 2.0f;
 	GLfloat avg_y = (max_y + min_y) / 2.0f;
 	GLfloat avg_z = (max_z + min_z) / 2.0f;
-	this->center = glm::vec3(avg_x, avg_y, avg_z);
+	this->center = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	// Shifting max and mins
 	max_x -= avg_x;
@@ -240,7 +240,7 @@ void Geometry::shiftAndResizeModel()
 		vertices[i].z -= avg_z;
 		vertices[i].z /= max_coord;
 
-		float distance = abs(glm::distance(center, vertices[i]));
+		float distance = abs(glm::distance(glm::vec3(0.0f, 0.0f, 0.0f), vertices[i]));
 		if (distance > this->radius) {
 			this->radius = distance;
 		}
