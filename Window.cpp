@@ -43,6 +43,7 @@ bool first = true;
 bool firstMouse = true;
 bool Window::movement = false;
 bool toggleModel = true;
+bool toggleWater = true;
 int Window::normalColor = 0;
 
 glm::vec2 Window::lastPoint = glm::vec2(0.0f, 0.0f);
@@ -399,10 +400,11 @@ void Window::display_callback(GLFWwindow* window)
     
     
     
-    //Testing water
-    glUseProgram(waterShader);
-    water->draw(waterShader);
-    
+    //Draw water
+    if (toggleWater == true){
+      glUseProgram(waterShader);
+      water->draw(waterShader);
+    }
     
     
 	// Gets events, including input such as keyboard and mouse or window resizing
@@ -474,6 +476,16 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 				t3->updateBuffers();
 			}
 			break;
+                
+        case GLFW_KEY_P:
+            if (toggleWater == true){
+                toggleWater = false;
+            }
+                
+            else {
+                toggleWater = true;
+            }
+            break;
 		}
 	}
 	else if (action == GLFW_RELEASE) {
