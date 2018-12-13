@@ -3,7 +3,6 @@
 const char* window_title = "GLFW Starter Project";
 Geometry *redPoint, *greenPoint;
 Cube *cube;
-Curve *curves[8], *nbCurves[8];
 Terrain *terrain;
 Transform *world;
 GLint Window::objShader, Window::cubeShader, colorShader, terrainShader, treeShader;
@@ -486,6 +485,13 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
                 toggleWater = true;
             }
             break;
+		case GLFW_KEY_0:
+			engine->stopAllSounds();
+			boundVols.clear();
+			hiddenObjects.clear();
+			treeTransforms.clear();
+			collidingObjs.clear();
+			initialize_objects();
 		}
 	}
 	else if (action == GLFW_RELEASE) {
