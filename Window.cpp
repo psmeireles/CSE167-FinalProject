@@ -233,8 +233,8 @@ void Window::initialize_objects()
 		Transform * t_translate = new Transform(glm::translate(glm::mat4(1.0f), glm::vec3(xPos, terrain->map[xPos + terrainLength / 2][zPos + terrainLength / 2] + 18, zPos)));
 
 		t_translate->addChild(t_scale);
-		hiddenObjects->push_back(t_translate);
-		world->add(t_translate);
+		hiddenObjects.push_back(t_translate);
+		world->addChild(t_translate);
 	}
 }
 
